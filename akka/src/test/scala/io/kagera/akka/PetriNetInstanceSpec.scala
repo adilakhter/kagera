@@ -21,8 +21,26 @@ import scala.concurrent.duration._
 
 object PetriNetInstanceSpec {
 
-  def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem) =
-    system.actorOf(PetriNetInstance.props(petriNet), processId)
+  case object GetChild
+
+  class MockShardActor(childActorProps: Props, childActorName: String = UUID.randomUUID().toString) extends Actor {
+    val childActor = context.actorOf(childActorProps, childActorName)
+
+    def receive = {
+      case GetChild       ⇒ sender() ! childActor
+      case Passivate(msg) ⇒ childActor ! msg
+      case msg @ _        ⇒ childActor forward msg
+    }
+  }
+
+  def createPetriNetActor[S](props: Props, name: String)(implicit system: ActorSystem): ActorRef = {
+    val mockShardActorProps = Props(new MockShardActor(props, name))
+    system.actorOf(mockShardActorProps)
+  }
+
+  def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+    createPetriNetActor(PetriNetInstance.props(petriNet), processId)
+  }
 }
 
 class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
@@ -56,7 +74,6 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
       watch(actor)
       actor ! GetState
       expectMsgClass(classOf[Uninitialized])
-      expectMsgClass(classOf[Terminated])
     }
 
     "Afer being initialized respond with an InstanceState message on receiving a GetState command" in new TestSequenceNet {
@@ -262,29 +279,17 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
         transition(automated = false)(_ ⇒ Added(2))
       )
 
-      val mockShardRegion = system.actorOf(Props(new Actor {
-
-        val childActor = context.actorOf(
-          props = PetriNetInstance.props(petriNet, customSettings),
-          name = UUID.randomUUID().toString)
-
-        def receive = {
-          case 'GetChild      ⇒ sender() ! childActor
-          case Passivate(msg) ⇒ childActor ! msg
-          case msg @ _        ⇒ childActor forward msg
-        }
-      }))
+      val petriNetActor = createPetriNetActor(PetriNetInstance.props(petriNet, customSettings), UUID.randomUUID().toString)
 
       implicit val timeout = Timeout(2 seconds)
-      whenReady((mockShardRegion ? 'GetChild).mapTo[ActorRef]) {
-        child: ActorRef ⇒ {
-
-            mockShardRegion ! Initialize(initialMarking, ())
+      whenReady((petriNetActor ? GetChild).mapTo[ActorRef]) {
+        child ⇒
+          {
+            petriNetActor ! Initialize(initialMarking, ())
             expectMsgClass(classOf[Initialized])
 
             watch(child)
             expectMsgClass(classOf[Terminated])
-
           }
       }
     }
