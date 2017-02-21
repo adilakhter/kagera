@@ -1,6 +1,7 @@
 package io.kagera.akka.actor
 
 import akka.actor._
+import akka.cluster.sharding.ShardRegion.Passivate
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.pattern.pipe
@@ -78,13 +79,22 @@ class PetriNetInstance[S](
       }
     case msg: Command ⇒
       sender() ! Uninitialized(processId)
+      context.parent ! Passivate(SupervisorStrategy.Stop)
+      context.stop(context.self)
+
+    case SupervisorStrategy.Stop ⇒
       context.stop(context.self)
   }
 
   def running(instance: Instance[S]): Receive = {
-    case IdleStop(n) if n == instance.sequenceNr && instance.activeJobs.isEmpty ⇒
-      log.debug(s"Instance was idle for ${settings.idleTTL}, stopping the actor")
+
+    case SupervisorStrategy.Stop ⇒
       context.stop(context.self)
+
+    case IdleStop(n) if n == instance.sequenceNr && instance.activeJobs.isEmpty ⇒
+      val mdc = Map("processId" -> processId)
+      logWithMDC(Logging.DebugLevel, s"Instance was idle for ${settings.idleTTL}, stopping the actor", mdc)
+      context.parent ! Passivate(SupervisorStrategy.Stop)
 
     case GetState ⇒
       sender() ! InstanceState(instance)
@@ -152,7 +162,8 @@ class PetriNetInstance[S](
           updateAndRespond(EventSourcing.apply(instance)(event))
         case _ ⇒
           persistEvent(instance, event)(
-            EventSourcing.apply(instance).andThen(updateAndRespond _))
+            EventSourcing.apply(instance)
+              .andThen(updateAndRespond _))
       }
 
     case msg @ FireTransition(transitionId, input, correlationId) ⇒

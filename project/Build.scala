@@ -62,6 +62,7 @@ object Build extends Build {
         scalaReflect,
         akkaActor,
         akkaPersistence,
+        akkaClusterSharding,
         akkaSlf4j,
         akkaStream,
         akkaQuery,

@@ -2,7 +2,10 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.actor.{ ActorSystem, PoisonPill, Terminated }
+import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props, Terminated }
+import akka.pattern.ask
+import akka.cluster.sharding.ShardRegion.Passivate
+import akka.util.Timeout
 import fs2.Strategy
 import io.kagera.akka.PetriNetInstanceSpec._
 import io.kagera.akka.actor.PetriNetInstance
@@ -11,6 +14,7 @@ import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Milliseconds, Span }
 
 import scala.concurrent.duration._
@@ -21,7 +25,7 @@ object PetriNetInstanceSpec {
     system.actorOf(PetriNetInstance.props(petriNet), processId)
 }
 
-class PetriNetInstanceSpec extends AkkaTestBase {
+class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
 
   "A persistent petri net actor" should {
 
@@ -170,7 +174,7 @@ class PetriNetInstanceSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ Added(2))
       )
 
-      val actorName = java.util.UUID.randomUUID().toString
+      val actorName = UUID.randomUUID().toString
 
       val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
 
@@ -213,7 +217,7 @@ class PetriNetInstanceSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ throw new RuntimeException("t2 failed"))
       )
 
-      val actorName = java.util.UUID.randomUUID().toString
+      val actorName = UUID.randomUUID().toString
 
       val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
 
@@ -258,15 +262,31 @@ class PetriNetInstanceSpec extends AkkaTestBase {
         transition(automated = false)(_ ⇒ Added(2))
       )
 
-      val actor = system.actorOf(
-        props = PetriNetInstance.props(petriNet, customSettings),
-        name = java.util.UUID.randomUUID().toString)
+      val mockShardRegion = system.actorOf(Props(new Actor {
 
-      actor ! Initialize(initialMarking, ())
-      expectMsgClass(classOf[Initialized])
+        val childActor = context.actorOf(
+          props = PetriNetInstance.props(petriNet, customSettings),
+          name = UUID.randomUUID().toString)
 
-      watch(actor)
-      expectMsgClass(classOf[Terminated])
+        def receive = {
+          case 'GetChild      ⇒ sender() ! childActor
+          case Passivate(msg) ⇒ childActor ! msg
+          case msg @ _        ⇒ childActor forward msg
+        }
+      }))
+
+      implicit val timeout = Timeout(2 seconds)
+      whenReady((mockShardRegion ? 'GetChild).mapTo[ActorRef]) {
+        child: ActorRef ⇒ {
+
+            mockShardRegion ! Initialize(initialMarking, ())
+            expectMsgClass(classOf[Initialized])
+
+            watch(child)
+            expectMsgClass(classOf[Terminated])
+
+          }
+      }
     }
 
     "fire automated transitions in parallel when possible" in new StateTransitionNet[Unit, Unit] {
