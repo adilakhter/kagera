@@ -17,6 +17,11 @@ object AkkaTestBase {
       |    journal.plugin = "inmemory-journal"
       |    snapshot-store.plugin = "inmemory-snapshot-store"
       |  }
+      |
+      |}
+      |
+      |encryption {
+      |  secret = "0123456789012345"
       |}
       |
       |inmemory-read-journal {
