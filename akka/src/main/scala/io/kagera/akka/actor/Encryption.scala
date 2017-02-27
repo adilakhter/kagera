@@ -14,10 +14,8 @@ object Encryption {
   }
 
   object NoEncryption extends Encryption {
-
     def encrypt(dataBytes: Array[Byte]): Array[Byte] = dataBytes
     def decrypt(dataBytes: Array[Byte]): Array[Byte] = dataBytes
-
   }
 
   class JavaCryptoEncryption(algorithmName: String, secret: String) extends Encryption {
