@@ -14,7 +14,7 @@ class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
     // for now we re-use akka Serialization extension for pluggable serializers
     val serializer = serialization.findSerializerFor(obj)
 
-    val bytes = serializer.toBinary(obj)
+    val bytes = Encryption.AES.encrypt(serializer.toBinary(obj), system.settings.config.getString("encryption.secret"))
 
     val manifest = serializer match {
       case s: SerializerWithStringManifest ⇒ s.manifest(obj)
@@ -37,7 +37,9 @@ class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
         val serializer = serialization.serializerByIdentity.getOrElse(serializerId,
           throw new IllegalStateException(s"No serializer found with id $serializerId")
         )
-        serializer.fromBinary(data.toByteArray)
+        val decryptedData = Encryption.AES.decrypt(data.toByteArray, system.settings.config.getString("encryption.secret"))
+        serializer.fromBinary(decryptedData)
     }
   }
 }
+
