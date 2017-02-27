@@ -3,10 +3,11 @@ package io.kagera.akka.actor
 import akka.actor.ActorSystem
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
 import com.google.protobuf.ByteString
+import io.kagera.akka.actor.Encryption.{ Encryption, NoEncryption }
 import io.kagera.persistence.ObjectSerializer
 import io.kagera.persistence.messages._
 
-class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
+class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncryption) extends ObjectSerializer {
 
   private val serialization = SerializationExtension.get(system)
 
@@ -14,7 +15,7 @@ class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
     // for now we re-use akka Serialization extension for pluggable serializers
     val serializer = serialization.findSerializerFor(obj)
 
-    val bytes = Encryption.AES.encrypt(serializer.toBinary(obj), system.settings.config.getString("encryption.secret"))
+    val bytes = encryption.encrypt(serializer.toBinary(obj))
 
     val manifest = serializer match {
       case s: SerializerWithStringManifest ⇒ s.manifest(obj)
@@ -37,7 +38,7 @@ class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
         val serializer = serialization.serializerByIdentity.getOrElse(serializerId,
           throw new IllegalStateException(s"No serializer found with id $serializerId")
         )
-        val decryptedData = Encryption.AES.decrypt(data.toByteArray, system.settings.config.getString("encryption.secret"))
+        val decryptedData = encryption.decrypt(data.toByteArray)
         serializer.fromBinary(decryptedData)
     }
   }

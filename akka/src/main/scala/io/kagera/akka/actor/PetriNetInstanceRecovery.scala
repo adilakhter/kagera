@@ -1,6 +1,7 @@
 package io.kagera.akka.actor
 
 import akka.persistence.{PersistentActor, RecoveryCompleted}
+import io.kagera.akka.actor.Encryption.AESJavaCryptoEncryption
 import io.kagera.api.colored.ExecutablePetriNet
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{EventSourcing, Instance}
@@ -13,7 +14,7 @@ trait PetriNetInstanceRecovery[S] {
   def topology: ExecutablePetriNet[S]
 
   implicit val system = context.system
-  val serializer = new Serialization(new AkkaObjectSerializer(context.system))
+  val serializer = new Serialization(new AkkaObjectSerializer(context.system, encryption = AESJavaCryptoEncryption))
 
   def onRecoveryCompleted(state: Instance[S])
 

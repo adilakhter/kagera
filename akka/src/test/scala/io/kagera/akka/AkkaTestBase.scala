@@ -20,8 +20,10 @@ object AkkaTestBase {
       |
       |}
       |
-      |encryption {
-      |  secret = "0123456789012345"
+      |kagera {
+      |  encryption {
+      |    secret = "0123456789012345"
+      |  }
       |}
       |
       |inmemory-read-journal {
