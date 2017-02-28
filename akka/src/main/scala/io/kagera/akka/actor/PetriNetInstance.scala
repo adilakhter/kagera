@@ -82,7 +82,6 @@ class PetriNetInstance[S](
     case msg: Command ⇒
       sender() ! Uninitialized(processId)
       context.parent ! Passivate(SupervisorStrategy.Stop)
-      context.stop(context.self)
 
     case SupervisorStrategy.Stop ⇒
       context.stop(context.self)
