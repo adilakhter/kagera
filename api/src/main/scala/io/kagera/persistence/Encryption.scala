@@ -1,17 +1,10 @@
-package io.kagera.akka.actor
+package io.kagera.persistence
 
-import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Cipher
-
-import com.typesafe.config.ConfigFactory
+import javax.crypto.spec.SecretKeySpec
 
 // Taken from: https://gist.github.com/mumoshu/1587327
 object Encryption {
-
-  trait Encryption {
-    def encrypt(dataBytes: Array[Byte]): Array[Byte]
-    def decrypt(codeBytes: Array[Byte]): Array[Byte]
-  }
 
   object NoEncryption extends Encryption {
     def encrypt(dataBytes: Array[Byte]): Array[Byte] = dataBytes
@@ -35,8 +28,12 @@ object Encryption {
     }
   }
 
-  class AESJavaCryptoEncryption(secret: String) extends JavaCryptoEncryption("AES", secret)
+  class AESEncryption(secret: String) extends JavaCryptoEncryption("AES", secret)
 
-  object AESJavaCryptoEncryption extends AESJavaCryptoEncryption(secret = ConfigFactory.load().getString("kagera.encryption.secret"))
+  class DESEncryption(secret: String) extends JavaCryptoEncryption("DES", secret)
+}
 
+trait Encryption {
+  def encrypt(dataBytes: Array[Byte]): Array[Byte]
+  def decrypt(codeBytes: Array[Byte]): Array[Byte]
 }

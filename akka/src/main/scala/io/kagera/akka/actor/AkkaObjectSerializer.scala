@@ -3,8 +3,8 @@ package io.kagera.akka.actor
 import akka.actor.ActorSystem
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
 import com.google.protobuf.ByteString
-import io.kagera.akka.actor.Encryption.{ Encryption, NoEncryption }
-import io.kagera.persistence.ObjectSerializer
+import io.kagera.persistence.Encryption.NoEncryption
+import io.kagera.persistence.{ Encryption, ObjectSerializer }
 import io.kagera.persistence.messages._
 
 class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncryption) extends ObjectSerializer {

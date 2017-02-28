@@ -5,7 +5,6 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.pattern.pipe
-import akka.persistence.PersistentActor
 import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
@@ -14,6 +13,8 @@ import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution._
+import io.kagera.persistence.Encryption
+import io.kagera.persistence.Encryption.NoEncryption
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -23,11 +24,13 @@ object PetriNetInstance {
 
   case class Settings(
     evaluationStrategy: Strategy,
-    idleTTL: Option[FiniteDuration])
+    idleTTL: Option[FiniteDuration],
+    encryption: Encryption = NoEncryption)
 
   val defaultSettings: Settings = Settings(
     evaluationStrategy = Strategy.fromCachedDaemonPool("Kagera.CachedThreadPool"),
-    idleTTL = Some(5 minutes)
+    idleTTL = Some(5 minutes),
+    encryption = NoEncryption
   )
 
   private case class IdleStop(seq: Long)
@@ -42,10 +45,9 @@ object PetriNetInstance {
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
 class PetriNetInstance[S](
-  override val topology: ExecutablePetriNet[S],
-  val settings: Settings,
-  executor: TransitionExecutor[S, Transition]) extends PersistentActor
-    with PetriNetInstanceRecovery[S] {
+    topology: ExecutablePetriNet[S],
+    settings: Settings,
+    executor: TransitionExecutor[S, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.encryption) {
 
   import PetriNetInstance._
 
