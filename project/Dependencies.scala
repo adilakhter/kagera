@@ -25,7 +25,7 @@ object Dependencies {
 
   val scalazCore               = "org.scalaz"                      %% "scalaz-core"               % "7.2.6"
 
-  val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.18"
+  val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
   val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
   val scalaGraph               = "com.assembla.scala-incubator"    %% "graph-core"             % "1.10.1"
