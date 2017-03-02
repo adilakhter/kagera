@@ -22,6 +22,8 @@ import scala.language.existentials
 
 object PetriNetInstance {
 
+  val persistencePrefix = "process-"
+
   case class Settings(
     evaluationStrategy: Strategy,
     idleTTL: Option[FiniteDuration],
@@ -35,7 +37,11 @@ object PetriNetInstance {
 
   private case class IdleStop(seq: Long)
 
-  def petriNetInstancePersistenceId(processId: String): String = s"process-$processId"
+  def processId2PersistenceId(processId: String): String = s"$persistencePrefix$processId"
+  def persistenceId2ProcessId(persistenceId: String): Option[String] = {
+    if (persistenceId startsWith persistencePrefix) Option(persistenceId.split(persistencePrefix)(1))
+    else None
+  }
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings = defaultSettings): Props =
     Props(new PetriNetInstance[S](topology, settings, new AsyncTransitionExecutor[S](topology)(settings.evaluationStrategy)))
@@ -55,7 +61,7 @@ class PetriNetInstance[S](
 
   val log = Logging.getLogger(this)
 
-  override def persistenceId: String = petriNetInstancePersistenceId(processId)
+  override def persistenceId: String = processId2PersistenceId(processId)
 
   import context.dispatcher
 

@@ -29,7 +29,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ Added(3))
       )
 
-      val actor = PetriNetInstanceSpec.createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int]](petriNet)
 
       actor ! Initialize(initialMarking, Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -41,6 +41,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
     }
 
     "Return an error response when one transition fails but a later one does not (parallel situation)" in new StateTransitionNet[Unit, Unit] {
+
       implicit val waitTimeout: FiniteDuration = 2 seconds
       implicit val akkaTimeout: akka.util.Timeout = waitTimeout
 
@@ -60,7 +61,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         p2 ~> t3
       )
 
-      val actor = PetriNetInstanceSpec.createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int]](petriNet)
 
       actor ! Initialize(Marking.empty, ())
       expectMsgClass(classOf[Initialized])
@@ -79,7 +80,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition()(_ ⇒ Added(1))
       )
 
-      val actor = PetriNetInstanceSpec.createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int]](petriNet)
       val api = new PetriNetInstanceApi(petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
 

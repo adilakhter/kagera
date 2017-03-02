@@ -11,23 +11,32 @@ import io.kagera.execution._
 import io.kagera.persistence.Encryption.NoEncryption
 import io.kagera.persistence.{ Encryption, Serialization }
 
-trait PetriNetQuery[S] {
+object PetriNetQuery {
 
-  def readJournal: ReadJournal with CurrentEventsByPersistenceIdQuery
-
-  def eventsForInstance(instanceId: String, topology: ExecutablePetriNet[S], encryption: Encryption = NoEncryption)(implicit actorSystem: ActorSystem): (Source[(Instance[S], Event), NotUsed]) = {
+  def eventsForInstance[S](processId: String,
+    topology: ExecutablePetriNet[S],
+    encryption: Encryption = NoEncryption,
+    readJournal: ReadJournal with CurrentEventsByPersistenceIdQuery)(implicit actorSystem: ActorSystem): Source[(Instance[S], Event), NotUsed] = {
 
     val serializer = new Serialization(new AkkaObjectSerializer(actorSystem, encryption))
 
-    val persistentId = PetriNetInstance.petriNetInstancePersistenceId(instanceId)
+    val persistentId = PetriNetInstance.processId2PersistenceId(processId)
     val src = readJournal.currentEventsByPersistenceId(persistentId, 0, Long.MaxValue)
 
     src.scan[(Instance[S], Event)]((Instance.uninitialized(topology), null.asInstanceOf[Event])) {
       case ((instance, prev), e) ⇒
         val serializedEvent = e.event.asInstanceOf[AnyRef]
-        val deserializedEvent = serializer.deserializeEvent(serializedEvent)(instance)
+        val deserializedEvent: Event = serializer.deserializeEvent(serializedEvent)(instance)
         val updatedInstance = EventSourcing.apply(instance)(deserializedEvent)
         (updatedInstance, deserializedEvent)
-    }.drop(1)
+    }.drop(1) // Just to drop the first event 'uninitialized', not interesting for the consumers.
+  }
+
+  def allProcessIds(readJournal: ReadJournal with AllPersistenceIdsQuery)(implicit actorSystem: ActorSystem): Source[String, NotUsed] = {
+    readJournal.allPersistenceIds
+      .map(PetriNetInstance.persistenceId2ProcessId) // This filters out anything that is not a processId (like shard actors, any other actors)
+      .collect {
+        case Some(processId) ⇒ processId
+      }
   }
 }

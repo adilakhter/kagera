@@ -7,7 +7,6 @@ import akka.pattern.ask
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.util.Timeout
 import fs2.Strategy
-import io.kagera.akka.PetriNetInstanceSpec._
 import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
@@ -18,30 +17,6 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Milliseconds, Span }
 
 import scala.concurrent.duration._
-
-object PetriNetInstanceSpec {
-
-  case object GetChild
-
-  class MockShardActor(childActorProps: Props, childActorName: String = UUID.randomUUID().toString) extends Actor {
-    val childActor = context.actorOf(childActorProps, childActorName)
-
-    def receive = {
-      case GetChild       ⇒ sender() ! childActor
-      case Passivate(msg) ⇒ childActor ! msg
-      case msg @ _        ⇒ childActor forward msg
-    }
-  }
-
-  def createPetriNetActor[S](props: Props, name: String)(implicit system: ActorSystem): ActorRef = {
-    val mockShardActorProps = Props(new MockShardActor(props, name))
-    system.actorOf(mockShardActorProps)
-  }
-
-  def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
-    createPetriNetActor(PetriNetInstance.props(petriNet), processId)
-  }
-}
 
 class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
 
