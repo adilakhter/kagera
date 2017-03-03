@@ -2,17 +2,17 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.persistence.inmemory.extension.{InMemoryJournalStorage, StorageExtension}
+import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.scaladsl.{AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
+import akka.persistence.query.scaladsl.{ AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
-import io.kagera.akka.actor.PetriNetInstanceProtocol.{Initialize, Initialized, TransitionFired}
+import io.kagera.akka.actor.PetriNetInstanceProtocol.{ Initialize, Initialized, TransitionFired }
 import io.kagera.akka.query.PetriNetQuery
 import io.kagera.api.colored.dsl._
-import io.kagera.api.colored.{Marking, Place}
-import io.kagera.execution.EventSourcing.{InitializedEvent, TransitionFiredEvent}
+import io.kagera.api.colored.{ Marking, Place }
+import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._
 
@@ -69,11 +69,11 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
             consumed shouldBe Marking(p1 -> 1)
             produced shouldBe Marking(p2 -> 1)
         }.expectNextChainingPF {
-        case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
-          transitionId shouldBe t2.id
-          consumed shouldBe Marking(p2 -> 1)
-          produced shouldBe Marking(p3 -> 1)
-      }
+          case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
+            transitionId shouldBe t2.id
+            consumed shouldBe Marking(p2 -> 1)
+            produced shouldBe Marking(p3 -> 1)
+        }
 
     }
 
