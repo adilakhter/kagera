@@ -7,7 +7,9 @@ import javax.crypto.spec.SecretKeySpec
 object Encryption {
 
   object NoEncryption extends Encryption {
+
     def encrypt(dataBytes: Array[Byte]): Array[Byte] = dataBytes
+
     def decrypt(dataBytes: Array[Byte]): Array[Byte] = dataBytes
   }
 
@@ -34,6 +36,8 @@ object Encryption {
 }
 
 trait Encryption {
+
   def encrypt(dataBytes: Array[Byte]): Array[Byte]
+
   def decrypt(codeBytes: Array[Byte]): Array[Byte]
 }
