@@ -1,23 +1,29 @@
 package io.kagera.peristence
 
-import io.kagera.persistence.Encryption.AESEncryption
+import io.kagera.persistence.Encryption.{AESEncryption, DESEncryption, JavaCryptoEncryption}
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.forAll
 import org.scalacheck._
 
 object EncryptionProperties extends Properties("EncryptionProperties") {
 
-  val keyAndTextGen = for {
-    key ← Gen.listOfN(16, alphaChar).map(_.mkString)
+  val aesEncryptionGen = for {
+    keyChars ← Gen.listOfN(8, alphaChar)
+  } yield new DESEncryption(keyChars.mkString)
+
+  val desEncryptionGen = for {
+    keyChars ← Gen.listOfN(16, alphaChar)
+  } yield new AESEncryption(keyChars.mkString)
+
+  val keyAndTextGen: Gen[(JavaCryptoEncryption, String)] = for {
+    algorithm ← Gen.oneOf(aesEncryptionGen, desEncryptionGen)
     text ← Gen.alphaStr
-  } yield (key, text)
+  } yield (algorithm, text)
 
-  property("AESEncryption: decrypt(encrypt(plaintext)) should be plaintext") = forAll(keyAndTextGen) {
-    case (key: String, plainText: String) ⇒
-      val encryptionAlgorithm = new AESEncryption(key)
-
-      val encryptedBytes = encryptionAlgorithm.encrypt(plainText.getBytes)
-      val decryptedPlainText = new String(encryptionAlgorithm.decrypt(encryptedBytes))
+  property("(AES|DES)Encryption: decrypt(encrypt(plaintext)) should be plaintext") = forAll(keyAndTextGen) {
+    case (encryption: JavaCryptoEncryption, plainText: String) ⇒
+      val encryptedBytes = encryption.encrypt(plainText.getBytes)
+      val decryptedPlainText = new String(encryption.decrypt(encryptedBytes))
 
       plainText == decryptedPlainText
   }
