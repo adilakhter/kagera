@@ -7,11 +7,11 @@ import org.scalacheck._
 
 object EncryptionProperties extends Properties("EncryptionProperties") {
 
-  val aesEncryptionGen = for {
+  val desEncryptionGen: Gen[DESEncryption] = for {
     keyChars ← Gen.listOfN(8, alphaChar)
   } yield new DESEncryption(keyChars.mkString)
 
-  val desEncryptionGen = for {
+  val aesEncryptionGen: Gen[AESEncryption] = for {
     keyChars ← Gen.listOfN(16, alphaChar)
   } yield new AESEncryption(keyChars.mkString)
 
