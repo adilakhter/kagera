@@ -32,14 +32,17 @@ class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncry
 
   override def deserializeObject(data: SerializedData): AnyRef = {
     data match {
-      case SerializedData(None, _, Some(_)) ⇒
+      case SerializedData(None, _, _) ⇒
         throw new IllegalStateException(s"Missing serializer id")
-      case SerializedData(Some(serializerId), _, Some(byteString)) ⇒
+      case SerializedData(Some(serializerId), manifest, Some(_data)) ⇒
         val serializer = serialization.serializerByIdentity.getOrElse(serializerId,
           throw new IllegalStateException(s"No serializer found with id $serializerId")
         )
-        val decryptedData = encryption.decrypt(byteString.toByteArray)
-        serializer.fromBinary(decryptedData)
+
+        serializer match {
+          case s: SerializerWithStringManifest ⇒ s.fromBinary(_data.toByteArray, manifest.get.toStringUtf8)
+          case _                               ⇒ serializer.fromBinary(_data.toByteArray, manifest.map(_.toStringUtf8).map(Class.forName))
+        }
     }
   }
 }
