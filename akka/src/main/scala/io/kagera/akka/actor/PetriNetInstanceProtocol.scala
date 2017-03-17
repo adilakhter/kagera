@@ -2,11 +2,21 @@ package io.kagera.akka.actor
 
 import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored.{ ExceptionStrategy, Marking, Transition }
+import io.kagera.execution.{ Instance, Job }
 
 /**
  * Describes the messages to and from a PetriNetInstance actor.
  */
 object PetriNetInstanceProtocol {
+
+  implicit def fromExecutionInstance[T](instance: io.kagera.execution.Instance[T]): InstanceState =
+    InstanceState(instance.sequenceNr, instance.marking, instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
+
+  implicit def fromExecutionJob[S, E](job: io.kagera.execution.Job[S, E]): JobState =
+    JobState(job.id, job.transition.id, job.consume, job.input, job.failure.map(fromExecutionExceptionState(_)))
+
+  implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
+    ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
 
   /**
    * A common trait for all commands to a petri net instance.
@@ -85,7 +95,7 @@ object PetriNetInstanceProtocol {
     consumed: Marking,
     produced: Marking,
     result: InstanceState,
-    newJobs: Set[JobState]) extends TransitionResponse
+    newJobsIds: Set[Long]) extends TransitionResponse
 
   /**
    * Response indicating that a transition has failed.
@@ -113,12 +123,6 @@ object PetriNetInstanceProtocol {
     failureReason: String,
     failureStrategy: ExceptionStrategy)
 
-  object ExceptionState {
-
-    def apply(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
-      ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
-  }
-
   /**
    * Response containing the state of the `Job`.
    */
@@ -136,11 +140,6 @@ object PetriNetInstanceProtocol {
     }
   }
 
-  object JobState {
-    def apply(job: io.kagera.execution.Job[_, _]): JobState =
-      JobState(job.id, job.transition.id, job.consume, job.input, job.failure.map(ExceptionState(_)))
-  }
-
   /**
    * Response containing the state of the process.
    */
@@ -155,11 +154,5 @@ object PetriNetInstanceProtocol {
 
     @transient
     lazy val availableMarking: Marking = marking |-| reservedMarking
-  }
-
-  object InstanceState {
-    // Note: extra .map(identity) is a needed to workaround the scala Map serialization bug: https://issues.scala-lang.org/browse/SI-7005
-    def apply(instance: io.kagera.execution.Instance[_]): InstanceState =
-      InstanceState(instance.sequenceNr, instance.marking, instance.state, instance.jobs.mapValues(JobState(_)).map(identity))
   }
 }

@@ -104,7 +104,7 @@ class PetriNetInstance[S](
       context.parent ! Passivate(SupervisorStrategy.Stop)
 
     case GetState ⇒
-      sender() ! InstanceState(instance)
+      sender() ! fromExecutionInstance(instance)
 
     case event @ TransitionFiredEvent(jobId, transitionId, timeStarted, timeCompleted, consumed, produced, output) ⇒
 
@@ -126,8 +126,8 @@ class PetriNetInstance[S](
         EventSourcing.apply(instance)
           .andThen(step)
           .andThen {
-            case (updatedInstance, jobs) ⇒
-              sender() ! TransitionFired(jobId, transitionId, event.consumed, event.produced, InstanceState(updatedInstance), jobs.map(JobState(_)))
+            case (updatedInstance, newJobs) ⇒
+              sender() ! TransitionFired(jobId, transitionId, event.consumed, event.produced, fromExecutionInstance(updatedInstance), newJobs.map(_.id))
               updatedInstance
           }
 
@@ -136,6 +136,7 @@ class PetriNetInstance[S](
     case event @ TransitionFailedEvent(jobId, transitionId, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
 
       val transition = topology.transitions.getById(transitionId)
+
       val mdc = Map(
         "kageraEvent" -> "TransitionFailed",
         "processId" -> processId,

@@ -14,7 +14,7 @@ class AsyncTransitionExecutor[State](topology: ColoredPetriNet)(implicit strateg
   override def apply[Input, Output](t: Transition[Input, Output, State]): TransitionFunction[Input, Output, State] = {
     (consume, state, input) ⇒
 
-      def handleFailure: PartialFunction[Throwable, Task[(Marking, Output)]] = {
+      val handleFailure: PartialFunction[Throwable, Task[(Marking, Output)]] = {
         case e: Throwable ⇒ Task.fail(e)
       }
 

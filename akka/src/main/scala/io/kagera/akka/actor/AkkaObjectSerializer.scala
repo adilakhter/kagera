@@ -3,19 +3,18 @@ package io.kagera.akka.actor
 import akka.actor.ActorSystem
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
 import com.google.protobuf.ByteString
-import io.kagera.persistence.Encryption.NoEncryption
+import io.kagera.persistence.ObjectSerializer
 import io.kagera.persistence.messages._
-import io.kagera.persistence.{ Encryption, ObjectSerializer }
 
-class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncryption) extends ObjectSerializer {
+class AkkaObjectSerializer(system: ActorSystem) extends ObjectSerializer {
 
   private val serialization = SerializationExtension.get(system)
 
-  override def serializeObject(obj: AnyRef): SerializedData = {
+  override def serializeObject(obj: AnyRef) = {
     // for now we re-use akka Serialization extension for pluggable serializers
     val serializer = serialization.findSerializerFor(obj)
 
-    val bytes = encryption.encrypt(serializer.toBinary(obj))
+    val bytes = serializer.toBinary(obj)
 
     val manifest = serializer match {
       case s: SerializerWithStringManifest ⇒ s.manifest(obj)
@@ -32,15 +31,13 @@ class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncry
 
   override def deserializeObject(data: SerializedData): AnyRef = {
     data match {
-      case SerializedData(None, _, Some(_)) ⇒
+      case SerializedData(None, _, Some(data)) ⇒
         throw new IllegalStateException(s"Missing serializer id")
-      case SerializedData(Some(serializerId), _, Some(byteString)) ⇒
+      case SerializedData(Some(serializerId), manifest, Some(data)) ⇒
         val serializer = serialization.serializerByIdentity.getOrElse(serializerId,
           throw new IllegalStateException(s"No serializer found with id $serializerId")
         )
-        val decryptedData = encryption.decrypt(byteString.toByteArray)
-        serializer.fromBinary(decryptedData)
+        serializer.fromBinary(data.toByteArray)
     }
   }
 }
-

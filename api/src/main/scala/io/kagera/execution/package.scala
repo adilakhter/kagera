@@ -72,7 +72,7 @@ package object execution {
     }
 
   def applyJobs[S](executor: TransitionExecutor[S, Transition])(jobs: Set[Job[S, _]]): State[Instance[S], List[TransitionEvent]] = {
-    State { (instance: Instance[S]) ⇒
+    State { instance ⇒
       val events = Task.traverse(jobs.toSeq)(job ⇒ runJobAsync(executor)(job)).unsafeRun()
       val updated = events.foldLeft(instance) { (s, e) ⇒
         val appliedEvent = EventSourcing.apply(s)(e)

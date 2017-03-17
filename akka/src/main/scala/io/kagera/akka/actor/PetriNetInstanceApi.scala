@@ -27,8 +27,7 @@ class QueuePushingActor(queue: SourceQueueWithComplete[TransitionResponse], wait
     case e: TransitionFired ⇒
       queue.offer(e)
 
-      val newJobIds = e.newJobs.map(_.id)
-      runningJobs = runningJobs ++ newJobIds - e.jobId
+      runningJobs = runningJobs ++ e.newJobsIds - e.jobId
 
       stopActorIfDone
 
