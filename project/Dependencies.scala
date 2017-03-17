@@ -23,8 +23,6 @@ object Dependencies {
   val akkaAnalyticsCassandra   = "com.github.krasserm"             %% "akka-analytics-cassandra"   % "0.3.1"
   val akkaAnalyticsKafka       = "com.github.krasserm"             %% "akka-analytics-kafka"       % "0.3.1"
 
-  val scalazCore               = "org.scalaz"                      %% "scalaz-core"               % "7.2.6"
-
   val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
   val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
