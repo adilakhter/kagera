@@ -39,9 +39,10 @@ class AkkaObjectSerializer(system: ActorSystem, encryption: Encryption = NoEncry
           throw new IllegalStateException(s"No serializer found with id $serializerId")
         )
 
+        val decryptedData = encryption.decrypt(_data.toByteArray)
         serializer match {
-          case s: SerializerWithStringManifest ⇒ s.fromBinary(_data.toByteArray, manifest.get.toStringUtf8)
-          case _                               ⇒ serializer.fromBinary(_data.toByteArray, manifest.map(_.toStringUtf8).map(Class.forName))
+          case s: SerializerWithStringManifest ⇒ s.fromBinary(decryptedData, manifest.get.toStringUtf8)
+          case _                               ⇒ serializer.fromBinary(decryptedData, manifest.map(_.toStringUtf8).map(Class.forName))
         }
     }
   }

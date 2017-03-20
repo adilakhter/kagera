@@ -43,7 +43,8 @@ object Build extends Build {
         scalaGraph,
         catsCore,
         fs2Core,
-        scalatest % "test"))
+        scalatest % "test",
+        mockito % "test"))
 
   lazy val visualization = Project("visualization", file("visualization"))
     .dependsOn(api)
@@ -70,7 +71,8 @@ object Build extends Build {
         akkaInmemoryJournal % "test",
         akkaTestkit % "test",
         akkaStreamTestKit % "test",
-        scalatest   % "test")
+        scalatest   % "test",
+        mockito % "test")
     ))
 
 

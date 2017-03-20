@@ -1,4 +1,3 @@
-import sbt.Keys._
 import sbt._
 
 object Dependencies {
@@ -36,5 +35,6 @@ object Dependencies {
   val ficus                    = "net.ceedubs"                     %% "ficus"                  % "1.1.2"
   val scalaReflect             = "org.scala-lang"                  % "scala-reflect"           % "2.11.8"
   val scalatest                = "org.scalatest"                   %% "scalatest"              % "2.2.1"
-  val scalaCheck               = "org.scalacheck"                  %% "scalacheck"             % "1.13.4" % "test"
+  val scalaCheck               = "org.scalacheck"                  %% "scalacheck"             % "1.13.4"
+  val mockito                  = "org.mockito"                     %  "mockito-all"            % "1.10.19"
 }
