@@ -1,13 +1,11 @@
 package io.kagera.persistence
 
-import io.kagera.persistence.messages.SerializedData
-
 /**
  * Trait responsible for (de)serializing token values and transition output objects.
  */
 trait ObjectSerializer {
 
-  def serializeObject(obj: AnyRef): SerializedData
+  def serializeObject(obj: AnyRef): SerializedObject
 
-  def deserializeObject(data: SerializedData): AnyRef
+  def deserializeObject(data: SerializedObject): AnyRef
 }

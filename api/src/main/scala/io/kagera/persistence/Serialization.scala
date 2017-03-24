@@ -1,16 +1,16 @@
 package io.kagera.persistence
 
+import com.google.protobuf.ByteString
 import io.kagera.api._
 import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{ EventSourcing, Instance }
-import io.kagera.persistence.Serialization._
-import io.kagera.persistence.messages.FailureStrategy
 import io.kagera.persistence.messages.FailureStrategy.StrategyType
-import io.kagera.persistence.messages.FailureStrategy.StrategyType.{ BLOCK_ALL, BLOCK_TRANSITION }
+import io.kagera.persistence.messages.{ FailureStrategy, SerializedData }
 
 import scala.runtime.BoxedUnit
+import Serialization._
 
 object Serialization {
 
@@ -27,6 +27,16 @@ object Serialization {
       -1
     else
       e.hashCode()
+  }
+
+  implicit def transformSerializedObject(obj: SerializedObject): SerializedData = {
+    SerializedData(Some(obj.serializerId), Some(ByteString.copyFrom(obj.manifest.getBytes)), Some(ByteString.copyFrom(obj.bytes)))
+  }
+
+  implicit def transformSerializedData(serialized: SerializedData): SerializedObject = serialized match {
+    case SerializedData(Some(serializerId), Some(manifest), Some(bytes)) ⇒
+      SerializedObject(serializerId, manifest.toStringUtf8, bytes.toByteArray)
+
   }
 }
 
@@ -68,11 +78,15 @@ class Serialization(serializer: ObjectSerializer) {
     }
   }
 
+  def deserializeObject(obj: messages.SerializedData): AnyRef = {
+    (transformSerializedData _).andThen(serializer.deserializeObject)(obj)
+  }
+
   private def deserializeProducedMarking[S](instance: Instance[S], produced: Seq[messages.ProducedToken]): Marking = {
     produced.foldLeft(Marking.empty) {
       case (accumulated, messages.ProducedToken(Some(placeId), Some(tokenId), Some(count), data)) ⇒
         val place = instance.process.places.getById(placeId)
-        val value = data.map(serializer.deserializeObject).getOrElse(BoxedUnit.UNIT)
+        val value = data.map(deserializeObject).getOrElse(BoxedUnit.UNIT)
         accumulated.add(place.asInstanceOf[Place[Any]], value, count)
       case _ ⇒ throw new IllegalStateException("Missing data in persisted ProducedToken")
     }
@@ -114,7 +128,7 @@ class Serialization(serializer: ObjectSerializer) {
 
   private def deserializeInitialized[S](e: messages.Initialized)(instance: Instance[S]): InitializedEvent = {
     val initialMarking = deserializeProducedMarking(instance, e.initialMarking)
-    val initialState = e.initialState.map(serializer.deserializeObject).getOrElse(BoxedUnit.UNIT)
+    val initialState = e.initialState.map(deserializeObject).getOrElse(BoxedUnit.UNIT)
     InitializedEvent(initialMarking, initialState)
   }
 
@@ -131,7 +145,7 @@ class Serialization(serializer: ObjectSerializer) {
       val transitionId = e.transitionId.getOrElse(missingFieldException("transition_id"))
       val timeStarted = e.timeStarted.getOrElse(missingFieldException("time_started"))
       val timeFailed = e.timeFailed.getOrElse(missingFieldException("time_failed"))
-      val input = e.inputData.map(serializer.deserializeObject)
+      val input = e.inputData.map(deserializeObject)
       val failureReason = e.failureReason.getOrElse("")
       val failureStrategy = e.failureStrategy.getOrElse(missingFieldException("time_failed")) match {
         case FailureStrategy(Some(StrategyType.BLOCK_TRANSITION), _) ⇒ BlockTransition
@@ -183,7 +197,7 @@ class Serialization(serializer: ObjectSerializer) {
     val consumed: Marking = deserializeConsumedMarking(instance, e)
     val produced: Marking = deserializeProducedMarking(instance, e.produced)
 
-    val data = e.data.map(serializer.deserializeObject)
+    val data = e.data.map(deserializeObject)
 
     val transitionId = e.transitionId.getOrElse(missingFieldException("transition_id"))
     val jobId = e.jobId.getOrElse(missingFieldException("job_id"))

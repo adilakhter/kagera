@@ -2,13 +2,10 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props, Terminated }
+import akka.actor.{ ActorRef, PoisonPill, Terminated }
 import akka.pattern.ask
-import akka.cluster.sharding.ShardRegion.Passivate
 import akka.util.Timeout
-import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance
-import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
@@ -244,10 +241,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
 
       val ttl = 500 milliseconds
 
-      val customSettings = Settings(
-        evaluationStrategy = Strategy.fromCachedDaemonPool("Kagera.CachedThreadPool"),
-        idleTTL = Some(ttl)
-      )
+      val customSettings = instanceSettings.copy(idleTTL = Some(ttl))
 
       override val sequence = Seq(
         transition(automated = false)(_ ⇒ Added(1)),

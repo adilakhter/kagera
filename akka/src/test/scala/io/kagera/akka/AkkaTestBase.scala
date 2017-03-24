@@ -6,9 +6,13 @@ import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.testkit.{ ImplicitSender, TestKit }
 import com.typesafe.config.ConfigFactory
-import io.kagera.akka.actor.PetriNetInstance
+import fs2.Strategy
+import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
+import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.api.colored.ExecutablePetriNet
+import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
+import scala.concurrent.duration._
 
 object AkkaTestBase {
 
@@ -70,13 +74,19 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     }
   }
 
+  val instanceSettings = Settings(
+    evaluationStrategy = Strategy.fromCachedDaemonPool("Kagera.CachedThreadPool"),
+    idleTTL = None,
+    serializer = new AkkaObjectSerializer(system, NoEncryption)
+  )
+
   def createPetriNetActor[S](props: Props, name: String)(implicit system: ActorSystem): ActorRef = {
     val mockShardActorProps = Props(new MockShardActor(props, name))
     system.actorOf(mockShardActorProps)
   }
 
   def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
-    createPetriNetActor(PetriNetInstance.props(petriNet), processId)
+    createPetriNetActor(PetriNetInstance.props(petriNet, instanceSettings), processId)
   }
 
 }
