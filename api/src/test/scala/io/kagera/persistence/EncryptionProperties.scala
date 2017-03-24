@@ -1,4 +1,4 @@
-package io.kagera.peristence
+package io.kagera.persistence
 
 import io.kagera.persistence.Encryption.{ AESEncryption, DESEncryption, JavaCryptoEncryption }
 import org.scalacheck.Gen._
