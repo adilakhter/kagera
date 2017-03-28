@@ -43,6 +43,7 @@ object Build extends Build {
         scalaGraph,
         catsCore,
         fs2Core,
+        scalaCheck % "test",
         scalatest % "test",
         mockito % "test"))
 

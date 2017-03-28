@@ -4,8 +4,6 @@ object Dependencies {
 
   val akkaVersion = "2.4.17"
   val akkaHttpVersion = "2.4.11"
-  val sprayVersion = "1.3.2"
-  val scalazVersion = "7.1.3"
   val cytoscapeVersion = "2.7.9"
 
   val akkaActor                = "com.typesafe.akka"               %% "akka-actor"                          % akkaVersion
@@ -25,13 +23,13 @@ object Dependencies {
   val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
   val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
-  val scalaGraph               = "com.assembla.scala-incubator"    %% "graph-core"             % "1.10.1"
-  val scalaGraphDot            = "com.assembla.scala-incubator"    %% "graph-dot"              % "1.10.1"
+  val scalaGraph               = "org.scala-graph"                  %% "graph-core"             % "1.11.4"
+  val scalaGraphDot            = "org.scala-graph"                  %% "graph-dot"              % "1.11.0"
 
-  val fs2Core                  = "co.fs2"                          %% "fs2-core"               % "0.9.1"
-  val catsCore                 = "org.typelevel"                   %% "cats-core"              % "0.7.2"
+  val fs2Core                  = "co.fs2"                          %% "fs2-core"               % "0.9.4"
+  val catsCore                 = "org.typelevel"                   %% "cats-core"              % "0.9.0"
 
-  val logback                  = "ch.qos.logback"                  %  "logback-classic"        % "1.1.2"
+  val logback                  = "ch.qos.logback"                  %  "logback-classic"        % "1.2.2"
   val ficus                    = "net.ceedubs"                     %% "ficus"                  % "1.1.2"
   val scalaReflect             = "org.scala-lang"                  % "scala-reflect"           % "2.11.8"
   val scalatest                = "org.scalatest"                   %% "scalatest"              % "2.2.1"
