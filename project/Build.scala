@@ -54,7 +54,7 @@ object Build extends Build {
       name := "kagera-visualization",
       libraryDependencies ++= Seq(
         scalaGraph,
-        scalaGraphDot))
+        scalaGraphDot exclude("org.scala-graph", "graph-core")))
 
   lazy val akka = Project("akka", file("akka"))
     .dependsOn(api)

@@ -17,9 +17,6 @@ object Dependencies {
   val akkaHttp                 = "com.typesafe.akka"               %% "akka-http-experimental"              % akkaHttpVersion
   val akkaInmemoryJournal      = "com.github.dnvriend"             %% "akka-persistence-inmemory"           % "2.4.17.1"
 
-  val akkaAnalyticsCassandra   = "com.github.krasserm"             %% "akka-analytics-cassandra"   % "0.3.1"
-  val akkaAnalyticsKafka       = "com.github.krasserm"             %% "akka-analytics-kafka"       % "0.3.1"
-
   val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
   val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
