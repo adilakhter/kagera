@@ -46,8 +46,8 @@ object EventSourcing {
     marking: Marking,
     state: Any) extends Event
 
-  def apply[S]: Instance[S] ⇒ Event ⇒ Instance[S] = instance ⇒ e ⇒ {
-    e match {
+  def apply[S]: Instance[S] ⇒ Event ⇒ Instance[S] = instance ⇒ event ⇒ {
+    event match {
       case InitializedEvent(initialMarking, initialState) ⇒
         Instance[S](instance.process, 1, initialMarking, initialState.asInstanceOf[S], Map.empty)
       case e: TransitionFiredEvent ⇒
@@ -66,7 +66,7 @@ object EventSourcing {
           Job[S, Any](e.jobId, instance.state, transition, e.consume, e.input, None)
         }
         val failureCount = job.failureCount + 1
-        val updatedJob = job.copy(failure = Some(ExceptionState(failureCount, e.failureReason, e.exceptionStrategy)))
+        val updatedJob = job.copy(failure = Some(ExceptionState(e.timeFailed, failureCount, e.failureReason, e.exceptionStrategy)))
         instance.copy(jobs = instance.jobs + (job.id -> updatedJob))
     }
   }

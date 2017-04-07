@@ -146,6 +146,7 @@ class PetriNetInstance[S](
       def updateAndRespond(instance: Instance[S]) = {
         sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
         context become running(instance)
+        instance
       }
 
       strategy match {
@@ -158,9 +159,14 @@ class PetriNetInstance[S](
 
           logWithMDC(Logging.WarningLevel, s"Scheduling a retry of transition '$transition' in ${Duration(delay, MILLISECONDS).toString()}", mdc)
           val originalSender = sender()
-          val updatedInstance = EventSourcing.apply(instance)(event)
-          system.scheduler.scheduleOnce(delay milliseconds) { executeJob(updatedInstance.jobs(jobId), originalSender) }
-          updateAndRespond(EventSourcing.apply(instance)(event))
+          persistEvent(instance, event)(
+            EventSourcing.apply(instance)
+              .andThen(updateAndRespond _)
+              .andThen(updatedInstance ⇒ system.scheduler.scheduleOnce(delay milliseconds) {
+                executeJob(updatedInstance.jobs(jobId), originalSender)
+              })
+          )
+
         case _ ⇒
           persistEvent(instance, event)(
             EventSourcing.apply(instance)
@@ -192,7 +198,7 @@ class PetriNetInstance[S](
 
   // TODO remove side effecting here
   def step(instance: Instance[S]): (Instance[S], Set[Job[S, _]]) = {
-    allEnabledJobs.run(instance).value match {
+    newEnabledJobs.run(instance).value match {
       case (updatedInstance, jobs) ⇒
 
         if (jobs.isEmpty && updatedInstance.activeJobs.isEmpty)
@@ -201,6 +207,7 @@ class PetriNetInstance[S](
           }
 
         jobs.foreach(job ⇒ executeJob(job, sender()))
+
         context become running(updatedInstance)
         (updatedInstance, jobs)
     }
@@ -221,5 +228,22 @@ class PetriNetInstance[S](
     runJobAsync(executor)(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
-  override def onRecoveryCompleted(instance: Instance[S]) = step(instance)
+  def scheduleFailedJobsForRetry(instance: Instance[S]): Unit = {
+    instance.jobs.values.foreach {
+      case j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay)))) ⇒
+        val newDelay = failureTime + delay - System.currentTimeMillis()
+
+        if (newDelay < 0)
+          executeJob(j, sender())
+        else
+          system.scheduler.scheduleOnce(newDelay milliseconds) {
+            executeJob(j, sender())
+          }
+    }
+  }
+
+  override def onRecoveryCompleted(instance: Instance[S]) = {
+    scheduleFailedJobsForRetry(instance)
+    step(instance)
+  }
 }

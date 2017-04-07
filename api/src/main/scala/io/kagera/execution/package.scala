@@ -41,7 +41,7 @@ package object execution {
   /**
    * Finds the (optional) first transition that is automated & enabled
    */
-  def firstEnabledJob[S]: State[Instance[S], Option[Job[S, _]]] = State { instance ⇒
+  def firstNewEnabledJob[S]: State[Instance[S], Option[Job[S, _]]] = State { instance ⇒
     instance.process.enabledParameters(instance.availableMarking).find {
       case (t, markings) ⇒ t.isAutomated && !instance.isBlockedReason(t.id).isDefined
     }.map {
@@ -65,10 +65,10 @@ package object execution {
   /**
    * Finds all automated enabled transitions.
    */
-  def allEnabledJobs[S]: State[Instance[S], Set[Job[S, _]]] =
-    firstEnabledJob[S].flatMap {
+  def newEnabledJobs[S]: State[Instance[S], Set[Job[S, _]]] =
+    firstNewEnabledJob[S].flatMap {
       case None      ⇒ State.pure(Set.empty)
-      case Some(job) ⇒ allEnabledJobs[S].map(_ + job)
+      case Some(job) ⇒ newEnabledJobs[S].map(_ + job)
     }
 
   def applyJobs[S](executor: TransitionExecutor[S, Transition])(jobs: Set[Job[S, _]]): State[Instance[S], List[TransitionEvent]] = {
