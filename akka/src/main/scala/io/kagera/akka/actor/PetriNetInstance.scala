@@ -76,7 +76,10 @@ class PetriNetInstance[S](
       persistEvent(uninitialized, event) {
         EventSourcing.apply(uninitialized)
           .andThen(step)
-          .andThen { _ ⇒ sender() ! Initialized(marking, state) }
+          .andThen { updatedInstance ⇒
+            context become running(updatedInstance._1, Map.empty)
+            sender() ! Initialized(marking, state)
+          }
       }
     case msg: Command ⇒
       sender() ! Uninitialized(processId)
@@ -86,9 +89,10 @@ class PetriNetInstance[S](
       context.stop(context.self)
   }
 
-  def running(instance: Instance[S]): Receive = {
+  def running(instance: Instance[S], scheduledRetries: Map[Long, Cancellable]): Receive = {
 
     case SupervisorStrategy.Stop ⇒
+      scheduledRetries.values.foreach(_.cancel())
       context.stop(context.self)
 
     case IdleStop(n) if n == instance.sequenceNr && instance.activeJobs.isEmpty ⇒
@@ -121,6 +125,7 @@ class PetriNetInstance[S](
           .andThen {
             case (updatedInstance, newJobs) ⇒
               sender() ! TransitionFired(jobId, transitionId, event.consumed, event.produced, fromExecutionInstance(updatedInstance), newJobs.map(_.id))
+              context become running(updatedInstance, scheduledRetries - jobId)
               updatedInstance
           }
 
@@ -143,12 +148,6 @@ class PetriNetInstance[S](
 
       logWithMDC(Logging.WarningLevel, s"Transition '$transition' failed with: $reason", mdc)
 
-      def updateAndRespond(instance: Instance[S]) = {
-        sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
-        context become running(instance)
-        instance
-      }
-
       strategy match {
         case RetryWithDelay(delay) ⇒
           val mdc = Map(
@@ -161,16 +160,20 @@ class PetriNetInstance[S](
           val originalSender = sender()
           persistEvent(instance, event)(
             EventSourcing.apply(instance)
-              .andThen(updateAndRespond _)
-              .andThen(updatedInstance ⇒ system.scheduler.scheduleOnce(delay milliseconds) {
-                executeJob(updatedInstance.jobs(jobId), originalSender)
-              })
+              .andThen { updatedInstance ⇒
+                val retry = system.scheduler.scheduleOnce(delay milliseconds) { executeJob(updatedInstance.jobs(jobId), originalSender) }
+                sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
+                context become running(updatedInstance, scheduledRetries + (jobId -> retry))
+              }
           )
 
         case _ ⇒
           persistEvent(instance, event)(
             EventSourcing.apply(instance)
-              .andThen(updateAndRespond _))
+              .andThen { updatedInstance ⇒
+                sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
+                context become running(updatedInstance, scheduledRetries - jobId)
+              })
       }
 
     case msg @ FireTransition(transitionId, input, correlationId) ⇒
@@ -180,7 +183,7 @@ class PetriNetInstance[S](
       fireTransitionById[S](transitionId, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
-          context become running(updatedInstance)
+          context become running(updatedInstance, scheduledRetries)
         case (_, Left(reason)) ⇒
           val mdc = Map(
             "kageraEvent" -> "FireTransitionRejected",
@@ -207,8 +210,6 @@ class PetriNetInstance[S](
           }
 
         jobs.foreach(job ⇒ executeJob(job, sender()))
-
-        context become running(updatedInstance)
         (updatedInstance, jobs)
     }
   }
@@ -228,22 +229,26 @@ class PetriNetInstance[S](
     runJobAsync(executor)(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
-  def scheduleFailedJobsForRetry(instance: Instance[S]): Unit = {
-    instance.jobs.values.foreach {
-      case j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay)))) ⇒
+  def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
+    instance.jobs.values.foldLeft(Map.empty[Long, Cancellable]) {
+      case (acc, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
         val newDelay = failureTime + delay - System.currentTimeMillis()
-
-        if (newDelay < 0)
+        if (newDelay < 0) {
           executeJob(j, sender())
-        else
-          system.scheduler.scheduleOnce(newDelay milliseconds) {
+          acc
+        } else {
+          val cancellable = system.scheduler.scheduleOnce(newDelay milliseconds) {
             executeJob(j, sender())
           }
+          acc + (j.id -> cancellable)
+        }
+      case (acc, _) ⇒ acc
     }
   }
 
   override def onRecoveryCompleted(instance: Instance[S]) = {
-    scheduleFailedJobsForRetry(instance)
-    step(instance)
+    val scheduledRetries = scheduleFailedJobsForRetry(instance)
+    val updatedInstance = step(instance)._1
+    context become running(updatedInstance, scheduledRetries)
   }
 }
