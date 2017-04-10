@@ -1,3 +1,5 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.kagera/kagera_2.11/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/io.kagera/kagera_2.11)
+
 # Kagera. A Discrete, colored Petri Net DSL & Executor.
 
 Example of a simple colored petrinet with functions acting on the data in the tokens.
