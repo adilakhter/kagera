@@ -7,12 +7,12 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.testkit.{ ImplicitSender, TestKit }
 import com.typesafe.config.ConfigFactory
 import fs2.Strategy
+import io.kagera.akka.AkkaTestBase.MockShardActor
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.api.colored.ExecutablePetriNet
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
-import scala.concurrent.duration._
 
 object AkkaTestBase {
 
@@ -38,6 +38,17 @@ object AkkaTestBase {
       |
       |logging.root.level = WARN
     """.stripMargin)
+
+  case object GetChild
+  class MockShardActor(childActorProps: Props, childActorName: String = UUID.randomUUID().toString) extends Actor {
+    val childActor = context.actorOf(childActorProps, childActorName)
+
+    def receive = {
+      case GetChild       ⇒ sender() ! childActor
+      case Passivate(msg) ⇒ childActor ! msg
+      case msg @ _        ⇒ childActor forward msg
+    }
+  }
 }
 
 abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBase.defaultTestConfig))
@@ -63,17 +74,6 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     }
   }
 
-  case object GetChild
-  class MockShardActor(childActorProps: Props, childActorName: String = UUID.randomUUID().toString) extends Actor {
-    val childActor = context.actorOf(childActorProps, childActorName)
-
-    def receive = {
-      case GetChild       ⇒ sender() ! childActor
-      case Passivate(msg) ⇒ childActor ! msg
-      case msg @ _        ⇒ childActor forward msg
-    }
-  }
-
   val instanceSettings = Settings(
     evaluationStrategy = Strategy.fromCachedDaemonPool("Kagera.CachedThreadPool"),
     idleTTL = None,
@@ -88,5 +88,4 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
   def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
     createPetriNetActor(PetriNetInstance.props(petriNet, instanceSettings), processId)
   }
-
 }

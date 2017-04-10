@@ -231,16 +231,16 @@ class PetriNetInstance[S](
 
   def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
     instance.jobs.values.foldLeft(Map.empty[Long, Cancellable]) {
-      case (acc, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
+      case (map, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
         val newDelay = failureTime + delay - System.currentTimeMillis()
         if (newDelay < 0) {
           executeJob(j, sender())
-          acc
+          map
         } else {
           val cancellable = system.scheduler.scheduleOnce(newDelay milliseconds) {
             executeJob(j, sender())
           }
-          acc + (j.id -> cancellable)
+          map + (j.id -> cancellable)
         }
       case (acc, _) ⇒ acc
     }

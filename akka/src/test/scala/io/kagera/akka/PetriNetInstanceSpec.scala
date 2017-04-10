@@ -5,17 +5,22 @@ import java.util.UUID
 import akka.actor.{ ActorRef, PoisonPill, Terminated }
 import akka.pattern.ask
 import akka.util.Timeout
+import io.kagera.akka.AkkaTestBase.GetChild
 import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.time.{ Milliseconds, Span }
+
+import org.mockito.Mockito._
+import org.mockito.Matchers._
 
 import scala.concurrent.duration._
 
-class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
+class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSugar {
 
   "A persistent petri net actor" should {
 
@@ -34,7 +39,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
       expectMsg(Initialized(initialMarking, initialState))
     }
 
-    "Before being intialized respond with an Unitialized message and terminate on receiving a GetState command" in new TestSequenceNet {
+    "Before being initialized respond with an Unitialized message and terminate on receiving a GetState command" in new TestSequenceNet {
 
       override val sequence = Seq(
         transition()(_ ⇒ Added(1)),
@@ -201,14 +206,18 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
 
     "Not re-fire a failed/blocked transition after being restored from persistent storage" in new TestSequenceNet {
 
+      // setup a failing mock function
+      val mockT2 = mock[Set[Int] ⇒ Event]
+      when(mockT2.apply(any[Set[Int]])).thenThrow(new RuntimeException("t2 mock failed"))
+
       override val sequence = Seq(
         transition(automated = true)(_ ⇒ Added(1)),
-        transition(automated = true)(_ ⇒ throw new RuntimeException("t2 failed"))
+        transition(automated = true)(mockT2)
       )
 
-      val actorName = UUID.randomUUID().toString
+      val processId = UUID.randomUUID().toString
 
-      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val actor = createPetriNetActor[Set[Int]](petriNet, processId)
 
       actor ! Initialize(initialMarking, Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -223,18 +232,51 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures {
       expectMsgClass(classOf[Terminated])
       Thread.sleep(100)
 
-      // create a new actor with the same persistent identifier
-      val newActor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      reset(mockT2)
 
-      // TODO assert t2 is not fired again using mocks
+      // create a new actor with the same persistent identifier
+      val newActor = createPetriNetActor[Set[Int]](petriNet, processId)
 
       newActor ! GetState
 
       // assert that the actor is the same as before termination
-      expectMsgPF() {
-        case InstanceState(2, marking, _, jobs) ⇒
+      expectMsgPF() { case InstanceState(2, marking, _, jobs) ⇒ }
 
+      verifyZeroInteractions(mockT2)
+    }
+
+
+    "Not execute a retried transition after being stopped" in new TestSequenceNet {
+
+      val retryHandler: TransitionExceptionHandler = {
+        case (e, n) ⇒ RetryWithDelay(50)
       }
+
+      val mockFunction = mock[Set[Int] ⇒ Event]
+
+      override val sequence = Seq(
+        transition(automated = true, exceptionHandler = retryHandler)(mockFunction)
+      )
+      //
+      //      when(mockFunction.apply(any[Set[Int]])).thenThrow(new RuntimeException("failure"))
+      //
+      //      val actorName = UUID.randomUUID().toString
+      //
+      //      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      //
+      //      actor ! Initialize(initialMarking, Set.empty)
+      //      expectMsgClass(classOf[Initialized])
+      //
+      //      implicit val timeout = Timeout(2 seconds)
+      //      whenReady((actor ? GetChild).mapTo[ActorRef]) {
+      //        child ⇒ {
+      //          watch(child)
+      //          expectMsgClass(classOf[Terminated])
+      //          reset(mockFunction)
+      //          Thread.sleep(200)
+      //          verifyZeroInteractions(mockFunction)
+      //        }
+      //      }
     }
 
     "When Idle terminate after some time if an idle TTL has been specified" in new TestSequenceNet {
