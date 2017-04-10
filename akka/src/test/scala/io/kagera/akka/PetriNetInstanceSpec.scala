@@ -2,23 +2,26 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.actor.{ ActorRef, PoisonPill, Terminated }
+import akka.actor.{ActorRef, PoisonPill, Terminated}
 import akka.pattern.ask
 import akka.util.Timeout
 import io.kagera.akka.AkkaTestBase.GetChild
 import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
-import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
+import io.kagera.api.colored.ExceptionStrategy.{BlockTransition, Fatal, RetryWithDelay}
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.time.{ Milliseconds, Span }
-
+import org.scalatest.time.{Milliseconds, Span}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 
+import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.Success
 
 class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSugar {
 
@@ -204,7 +207,12 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsg(expectedFinalState)
     }
 
-    "Not re-fire a failed/blocked transition after being restored from persistent storage" in new TestSequenceNet {
+//    "Re-fire a failed transition with 'Retry' strategy after being restored from persistent storage" in new TestSequenceNet {
+//
+//
+//    }
+
+    "Not re-fire a failed transition with 'Blocked' strategy after being restored from persistent storage" in new TestSequenceNet {
 
       // setup a failing mock function
       val mockT2 = mock[Set[Int] ⇒ Event]
@@ -226,6 +234,8 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsgPF() { case TransitionFired(_, 1, _, _, _, _) ⇒ }
       expectMsgPF() { case TransitionFailed(_, 2, _, _, _, BlockTransition) ⇒ }
 
+      verify(mockT2)
+
       // terminate the actor
       watch(actor)
       actor ! PoisonPill
@@ -245,8 +255,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       verifyZeroInteractions(mockT2)
     }
 
-
-    "Not execute a retried transition after being stopped" in new TestSequenceNet {
+    "Not execute a transition with scheduled retry after being stopped" in new TestSequenceNet {
 
       val retryHandler: TransitionExceptionHandler = {
         case (e, n) ⇒ RetryWithDelay(50)
@@ -257,26 +266,35 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       override val sequence = Seq(
         transition(automated = true, exceptionHandler = retryHandler)(mockFunction)
       )
-      //
-      //      when(mockFunction.apply(any[Set[Int]])).thenThrow(new RuntimeException("failure"))
-      //
-      //      val actorName = UUID.randomUUID().toString
-      //
-      //      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
-      //
-      //      actor ! Initialize(initialMarking, Set.empty)
-      //      expectMsgClass(classOf[Initialized])
-      //
-      //      implicit val timeout = Timeout(2 seconds)
-      //      whenReady((actor ? GetChild).mapTo[ActorRef]) {
-      //        child ⇒ {
-      //          watch(child)
-      //          expectMsgClass(classOf[Terminated])
-      //          reset(mockFunction)
-      //          Thread.sleep(200)
-      //          verifyZeroInteractions(mockFunction)
-      //        }
-      //      }
+
+      val mockPromise = Promise[Boolean]
+
+      when(mockFunction.apply(any[Set[Int]])).thenAnswer(new Answer[Event] {
+        override def answer(invocationOnMock: InvocationOnMock): Event = {
+          mockPromise.complete(Success(true))
+          throw new RuntimeException("failure")
+        }
+      })
+
+      val actorName = UUID.randomUUID().toString
+
+      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+
+      actor ! Initialize(initialMarking, Set.empty)
+      expectMsgClass(classOf[Initialized])
+
+      whenReady(mockPromise.future) { _ =>
+
+        verify(mockFunction).apply(any[Set[Int]])
+
+        // kill the actor
+        actor ! PoisonPill
+        watch(actor)
+        expectMsgClass(classOf[Terminated])
+
+        Thread.sleep(100)
+        verifyZeroInteractions(mockFunction)
+      }
     }
 
     "When Idle terminate after some time if an idle TTL has been specified" in new TestSequenceNet {
