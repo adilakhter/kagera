@@ -116,8 +116,8 @@ class Serialization(serializer: ObjectSerializer) {
       }
     }
 
-  private def deserializeConsumedMarking[S](instance: Instance[S], e: messages.TransitionFired): Marking = {
-    e.consumed.foldLeft(Marking.empty) {
+  private def deserializeConsumedMarking[S](instance: Instance[S], persisted: Seq[io.kagera.persistence.messages.ConsumedToken]): Marking = {
+    persisted.foldLeft(Marking.empty) {
       case (accumulated, messages.ConsumedToken(Some(placeId), Some(tokenId), Some(count))) ⇒
         val place = instance.marking.keySet.getById(placeId)
         val value = instance.marking(place).keySet.find(e ⇒ tokenIdentifier(place)(e) == tokenId).get
@@ -147,6 +147,7 @@ class Serialization(serializer: ObjectSerializer) {
       val timeFailed = e.timeFailed.getOrElse(missingFieldException("time_failed"))
       val input = e.inputData.map(deserializeObject)
       val failureReason = e.failureReason.getOrElse("")
+      val consumed = deserializeConsumedMarking(instance, e.consumed)
       val failureStrategy = e.failureStrategy.getOrElse(missingFieldException("time_failed")) match {
         case FailureStrategy(Some(StrategyType.BLOCK_TRANSITION), _) ⇒ BlockTransition
         case FailureStrategy(Some(StrategyType.BLOCK_ALL), _)        ⇒ Fatal
@@ -154,7 +155,7 @@ class Serialization(serializer: ObjectSerializer) {
         case other @ _                                               ⇒ throw new IllegalStateException(s"Invalid failure strategy: $other")
       }
 
-      TransitionFailedEvent(jobId, transitionId, timeStarted, timeFailed, Marking.empty, None, failureReason, failureStrategy)
+      TransitionFailedEvent(jobId, transitionId, timeStarted, timeFailed, consumed, None, failureReason, failureStrategy)
   }
 
   private def serializeTransitionFailed(e: TransitionFailedEvent): messages.TransitionFailed = {
@@ -172,7 +173,8 @@ class Serialization(serializer: ObjectSerializer) {
       timeFailed = Some(e.timeFailed),
       inputData = e.input.flatMap(serializeObject _),
       failureReason = Some(e.failureReason),
-      failureStrategy = Some(strategy)
+      failureStrategy = Some(strategy),
+      consumed = serializeConsumedMarking(e.consume)
     )
   }
 
@@ -194,7 +196,7 @@ class Serialization(serializer: ObjectSerializer) {
 
   private def deserializeTransitionFired[S](e: messages.TransitionFired): Instance[S] ⇒ TransitionFiredEvent = instance ⇒ {
 
-    val consumed: Marking = deserializeConsumedMarking(instance, e)
+    val consumed: Marking = deserializeConsumedMarking(instance, e.consumed)
     val produced: Marking = deserializeProducedMarking(instance, e.produced)
 
     val data = e.data.map(deserializeObject)

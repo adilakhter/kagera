@@ -2,18 +2,18 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.actor.{ActorRef, PoisonPill, Terminated}
+import akka.actor.{ ActorRef, PoisonPill, SupervisorStrategy, Terminated }
 import akka.pattern.ask
 import akka.util.Timeout
 import io.kagera.akka.AkkaTestBase.GetChild
 import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
-import io.kagera.api.colored.ExceptionStrategy.{BlockTransition, Fatal, RetryWithDelay}
+import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.time.{Milliseconds, Span}
+import org.scalatest.time.{ Milliseconds, Span }
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.mockito.invocation.InvocationOnMock
@@ -24,6 +24,13 @@ import scala.concurrent.duration._
 import scala.util.Success
 
 class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSugar {
+
+  def syncKillActorWithPoisonPill(actor: ActorRef): Unit = {
+    watch(actor)
+    actor ! PoisonPill
+    expectMsgClass(classOf[Terminated])
+    Thread.sleep(100)
+  }
 
   "A persistent petri net actor" should {
 
@@ -193,10 +200,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsg(expectedFinalState)
 
       // terminate the actor
-      watch(actor)
-      actor ! PoisonPill
-      expectMsgClass(classOf[Terminated])
-      Thread.sleep(100)
+      syncKillActorWithPoisonPill(actor)
 
       // create a new actor with the same persistent identifier
       val newActor = createPetriNetActor[Set[Int]](petriNet, actorName)
@@ -207,10 +211,50 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsg(expectedFinalState)
     }
 
-//    "Re-fire a failed transition with 'Retry' strategy after being restored from persistent storage" in new TestSequenceNet {
-//
-//
-//    }
+    "Re-fire a failed transition with 'Retry' strategy after being restored from persistent storage" in new TestSequenceNet {
+      val retryHandler: TransitionExceptionHandler = {
+        case (e, n) ⇒ RetryWithDelay(200)
+      }
+      val mockFunction = mock[Set[Int] ⇒ Event]
+
+      override val sequence = Seq(
+        transition()(_ ⇒ Added(1)),
+        transition(automated = true, exceptionHandler = retryHandler)(mockFunction)
+      )
+
+      when(mockFunction.apply(any[Set[Int]])).thenThrow(new RuntimeException("t2 failed"))
+
+      val actorName = UUID.randomUUID().toString
+      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+
+      actor ! Initialize(initialMarking, Set.empty)
+      expectMsgClass(classOf[Initialized])
+
+      actor ! FireTransition(1, ())
+
+      expectMsgPF() { case TransitionFired(_, 1, _, _, _, _) ⇒ }
+      expectMsgPF() { case TransitionFailed(_, 2, _, _, _, RetryWithDelay(200)) ⇒ }
+
+      // kill the actor
+      actor ! SupervisorStrategy.Stop
+      syncKillActorWithPoisonPill(actor)
+
+      verify(mockFunction).apply(any[Set[Int]])
+
+      reset(mockFunction)
+      when(mockFunction.apply(any[Set[Int]])).thenAnswer(new Answer[Event] {
+
+        override def answer(invocationOnMock: InvocationOnMock): Event = {
+          Added(1)
+        }
+      })
+
+      // create a new actor with the same persistent identifier
+      val newActor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      Thread.sleep(500)
+
+      verify(mockFunction).apply(any[Set[Int]])
+    }
 
     "Not re-fire a failed transition with 'Blocked' strategy after being restored from persistent storage" in new TestSequenceNet {
 
@@ -234,13 +278,10 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsgPF() { case TransitionFired(_, 1, _, _, _, _) ⇒ }
       expectMsgPF() { case TransitionFailed(_, 2, _, _, _, BlockTransition) ⇒ }
 
-      verify(mockT2)
+      verify(mockT2).apply(any[Set[Int]])
 
       // terminate the actor
-      watch(actor)
-      actor ! PoisonPill
-      expectMsgClass(classOf[Terminated])
-      Thread.sleep(100)
+      syncKillActorWithPoisonPill(actor)
 
       reset(mockT2)
 
@@ -282,17 +323,20 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       actor ! Initialize(initialMarking, Set.empty)
       expectMsgClass(classOf[Initialized])
+      expectMsgPF() { case TransitionFailed(_, 1, _, _, _, RetryWithDelay(50)) ⇒ }
 
-      whenReady(mockPromise.future) { _ =>
+      whenReady(mockPromise.future) { _ ⇒
 
         verify(mockFunction).apply(any[Set[Int]])
 
         // kill the actor
-        actor ! PoisonPill
-        watch(actor)
-        expectMsgClass(classOf[Terminated])
+        actor ! SupervisorStrategy.Stop
+        syncKillActorWithPoisonPill(actor)
 
         Thread.sleep(100)
+
+        reset(mockFunction)
+
         verifyZeroInteractions(mockFunction)
       }
     }

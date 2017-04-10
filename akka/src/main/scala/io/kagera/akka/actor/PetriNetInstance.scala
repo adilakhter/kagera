@@ -201,11 +201,13 @@ class PetriNetInstance[S](
 
   // TODO remove side effecting here
   def step(instance: Instance[S]): (Instance[S], Set[Job[S, _]]) = {
+
     newEnabledJobs.run(instance).value match {
       case (updatedInstance, jobs) ⇒
 
         if (jobs.isEmpty && updatedInstance.activeJobs.isEmpty)
           settings.idleTTL.foreach { ttl ⇒
+
             system.scheduler.scheduleOnce(ttl, context.self, IdleStop(updatedInstance.sequenceNr))
           }
 
@@ -248,6 +250,7 @@ class PetriNetInstance[S](
 
   override def onRecoveryCompleted(instance: Instance[S]) = {
     val scheduledRetries = scheduleFailedJobsForRetry(instance)
+
     val updatedInstance = step(instance)._1
     context become running(updatedInstance, scheduledRetries)
   }

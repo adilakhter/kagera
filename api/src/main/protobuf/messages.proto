@@ -57,4 +57,5 @@ message TransitionFailed {
     optional SerializedData input_data = 6;
     optional string failure_reason = 7;
     optional FailureStrategy failure_strategy = 8;
+    repeated ConsumedToken consumed = 9;
 }
