@@ -3,9 +3,16 @@ scala:
    - 2.11.8
 jdk:
    - oraclejdk8
+
 notifications:
   email: false
 
 cache:
   directories:
-  - $HOME/.ivy2
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+script:
+  - sbt clean coverage test coverageReport
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
