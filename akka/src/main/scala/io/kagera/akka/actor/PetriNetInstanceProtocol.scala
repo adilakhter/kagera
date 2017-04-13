@@ -147,7 +147,7 @@ object PetriNetInstanceProtocol {
       sequenceNr: Long,
       marking: Marking,
       state: Any,
-      jobs: Map[Long, JobState]) {
+      jobs: Map[Long, JobState]) extends Response {
 
     @transient
     lazy val reservedMarking: Marking = jobs.map { case (id, job) ⇒ job.consumedMarking }.reduceOption(_ |+| _).getOrElse(Marking.empty)
