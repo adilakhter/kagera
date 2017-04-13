@@ -98,7 +98,7 @@ object Build extends Build {
         libraryDependencies ++= Seq(
           "de.heikoseeberger" %% "akka-http-upickle" % "1.10.1",
           akkaHttp,
-          akkaPersistenceQuery,
+          akkaQuery,
           akkaPersistenceCassandra),
         name      := "demo-app",
         mainClass := Some("io.kagera.demo.Main")

@@ -46,32 +46,26 @@ object EventSourcing {
     marking: Marking,
     state: Any) extends Event
 
-  def apply[S]: Instance[S] ⇒ Event ⇒ Instance[S] = instance ⇒ event ⇒ {
-    event match {
-      case InitializedEvent(initialMarking, initialState) ⇒
-        Instance[S](instance.process, 1, initialMarking, initialState.asInstanceOf[S], Map.empty)
-      case e: TransitionFiredEvent ⇒
-        val t = instance.process.transitions.getById(e.transitionId).asInstanceOf[Transition[_, Any, S]]
-        val newState = e.output.map(t.updateState(instance.state)).getOrElse(instance.state)
+  def apply[S]: Instance[S] ⇒ Event ⇒ Instance[S] = instance ⇒ {
+    case InitializedEvent(initialMarking, initialState) ⇒
+      Instance[S](instance.process, 1, initialMarking, initialState.asInstanceOf[S], Map.empty)
+    case e: TransitionFiredEvent ⇒
+      val t = instance.process.transitions.getById(e.transitionId).asInstanceOf[Transition[_, Any, S]]
+      val newState = e.output.map(t.updateState(instance.state)).getOrElse(instance.state)
 
-        instance.copy(
-          sequenceNr = instance.sequenceNr + 1,
-          marking = (instance.marking |-| e.consumed) |+| e.produced,
-          state = newState,
-          jobs = instance.jobs - e.jobId
-        )
-      case e: TransitionFailedEvent ⇒
-        val job = instance.jobs.get(e.jobId).getOrElse {
-          val transition = instance.process.transitions.getById(e.transitionId).asInstanceOf[Transition[Any, Any, S]]
-          val job =
-            Job[S, Any](e.jobId, instance.state, transition, e.consume, e.input.getOrElse(()), None)
-
-          println(s"deserialized job: $job")
-          job
-        }
-        val failureCount = job.failureCount + 1
-        val updatedJob = job.copy(failure = Some(ExceptionState(e.timeFailed, failureCount, e.failureReason, e.exceptionStrategy)))
-        instance.copy(jobs = instance.jobs + (job.id -> updatedJob))
-    }
+      instance.copy(
+        sequenceNr = instance.sequenceNr + 1,
+        marking = (instance.marking |-| e.consumed) |+| e.produced,
+        state = newState,
+        jobs = instance.jobs - e.jobId
+      )
+    case e: TransitionFailedEvent ⇒
+      val job = instance.jobs.getOrElse(e.jobId, {
+        val transition = instance.process.transitions.getById(e.transitionId).asInstanceOf[Transition[Any, Any, S]]
+        Job[S, Any](e.jobId, instance.state, transition, e.consume, e.input.getOrElse(()), None)
+      })
+      val failureCount = job.failureCount + 1
+      val updatedJob = job.copy(failure = Some(ExceptionState(e.timeFailed, failureCount, e.failureReason, e.exceptionStrategy)))
+      instance.copy(jobs = instance.jobs + (job.id -> updatedJob))
   }
 }

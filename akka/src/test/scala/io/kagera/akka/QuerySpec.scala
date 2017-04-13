@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.scaladsl.{ AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
+import akka.persistence.query.scaladsl.{ PersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
@@ -81,7 +81,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
-          .asInstanceOf[ReadJournal with AllPersistenceIdsQuery]
+          .asInstanceOf[ReadJournal with PersistenceIdsQuery]
 
       // Setup petriNet and instances
 

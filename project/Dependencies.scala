@@ -2,8 +2,8 @@ import sbt._
 
 object Dependencies {
 
-  val akkaVersion = "2.4.17"
-  val akkaHttpVersion = "2.4.11"
+  val akkaVersion = "2.5.0"
+  val akkaHttpVersion = "10.0.5"
   val cytoscapeVersion = "2.7.9"
 
   val akkaActor                = "com.typesafe.akka"               %% "akka-actor"                          % akkaVersion
@@ -12,13 +12,12 @@ object Dependencies {
   val akkaSlf4j                = "com.typesafe.akka"               %% "akka-slf4j"                          % akkaVersion
   val akkaStream               = "com.typesafe.akka"               %% "akka-stream"                         % akkaVersion
   val akkaStreamTestKit        = "com.typesafe.akka"               %% "akka-stream-testkit"                 % akkaVersion
-  val akkaQuery                = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
+  val akkaQuery                = "com.typesafe.akka"               %% "akka-persistence-query"              % akkaVersion
   val akkaClusterSharding      = "com.typesafe.akka"               %% "akka-cluster-sharding"               % akkaVersion
-  val akkaHttp                 = "com.typesafe.akka"               %% "akka-http-experimental"              % akkaHttpVersion
-  val akkaInmemoryJournal      = "com.github.dnvriend"             %% "akka-persistence-inmemory"           % "2.4.17.1"
+  val akkaHttp                 = "com.typesafe.akka"               %% "akka-http"                           % akkaHttpVersion
+  val akkaInmemoryJournal      = "com.github.dnvriend"             %% "akka-persistence-inmemory"           % "2.5.0.0"
 
   val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
-  val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
   val scalaGraph               = "org.scala-graph"                  %% "graph-core"             % "1.11.4"
   val scalaGraphDot            = "org.scala-graph"                  %% "graph-dot"              % "1.11.0"

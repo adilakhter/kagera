@@ -32,8 +32,8 @@ object PetriNetQuery {
     }.drop(1) // Just to drop the first event 'uninitialized', not interesting for the consumers.
   }
 
-  def allProcessIds(readJournal: AllPersistenceIdsQuery)(implicit actorSystem: ActorSystem): Source[String, NotUsed] = {
-    readJournal.allPersistenceIds
+  def allProcessIds(readJournal: PersistenceIdsQuery)(implicit actorSystem: ActorSystem): Source[String, NotUsed] = {
+    readJournal.persistenceIds
       .map(PetriNetInstance.persistenceId2ProcessId) // This filters out anything that is not a processId (like shard actors, any other actors)
       .collect {
         case Some(processId) ⇒ processId
