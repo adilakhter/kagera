@@ -2,7 +2,7 @@ package io.kagera.persistence
 
 import com.google.protobuf.ByteString
 import io.kagera.api._
-import io.kagera.api.colored.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
+import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{ EventSourcing, Instance }

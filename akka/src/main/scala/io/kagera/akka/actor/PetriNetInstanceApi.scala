@@ -8,7 +8,7 @@ import akka.util.Timeout
 import akka.pattern._
 
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
-import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored._
 
 import scala.collection.immutable.Seq

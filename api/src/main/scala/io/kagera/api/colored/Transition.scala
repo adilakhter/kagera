@@ -1,9 +1,8 @@
 package io.kagera.api.colored
 
-import io.kagera.api.colored.ExceptionStrategy.BlockTransition
+import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.multiset.MultiSet
-
-import scala.concurrent.duration.Duration
+import io.kagera.execution.TransitionExceptionHandler
 
 /**
  * A transition in a Colored Petri Net

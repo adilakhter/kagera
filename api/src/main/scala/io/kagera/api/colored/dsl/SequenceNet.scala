@@ -1,9 +1,10 @@
 package io.kagera.api.colored.dsl
 
 import fs2.Task
-import io.kagera.api.colored.ExceptionStrategy.BlockTransition
+import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.colored._
 import io.kagera.api.colored.transitions.{ AbstractTransition, UncoloredTransition }
+import io.kagera.execution.TransitionExceptionHandler
 
 case class TransitionBehaviour[S, E](automated: Boolean, exceptionHandler: TransitionExceptionHandler, fn: S ⇒ E) {
   def asTransition(id: Long, eventSource: S ⇒ E ⇒ S) = new AbstractTransition[Unit, E, S](id, s"t$id", automated, exceptionHandler) with UncoloredTransition[Unit, E, S] {

@@ -1,4 +1,4 @@
-package io.kagera.api.colored
+package io.kagera.execution
 
 object ExceptionStrategy {
 

@@ -10,4 +10,8 @@ import io.kagera.execution.EventSourcing._
 
 package object execution {
 
+  /**
+   * An exception handler function associated with a transition.
+   */
+  type TransitionExceptionHandler = (Throwable, Int) ⇒ ExceptionStrategy
 }

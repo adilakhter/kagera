@@ -36,11 +36,6 @@ package object colored {
   type TransitionTask[Input, Output, State] = (Marking, State, Input) ⇒ Task[(Marking, Output)]
 
   /**
-   * An exception handler function associated with a transition.
-   */
-  type TransitionExceptionHandler = (Throwable, Int) ⇒ ExceptionStrategy
-
-  /**
    * Type alias for a colored petri net.
    */
   type ColoredPetriNet = PetriNet[Place[_], Transition[_, _, _]]

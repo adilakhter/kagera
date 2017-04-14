@@ -1,8 +1,8 @@
 package io.kagera.akka.actor
 
-import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored.{ ExceptionStrategy, Marking, Transition }
-import io.kagera.execution.{ Instance, Job }
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
+import io.kagera.api.colored.{ Marking, Transition }
+import io.kagera.execution.{ ExceptionStrategy, Instance, Job }
 
 /**
  * Describes the messages to and from a PetriNetInstance actor.

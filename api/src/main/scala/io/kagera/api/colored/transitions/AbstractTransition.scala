@@ -1,7 +1,8 @@
 package io.kagera.api.colored.transitions
 
-import io.kagera.api.colored.ExceptionStrategy.BlockTransition
+import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.colored.{ Transition, _ }
+import io.kagera.execution.TransitionExceptionHandler
 
 import scala.concurrent.duration.Duration
 
