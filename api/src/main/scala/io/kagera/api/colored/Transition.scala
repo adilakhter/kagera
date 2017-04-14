@@ -74,7 +74,7 @@ trait Transition[Input, Output, State] {
    * @param outAdjacent
    * @return
    */
-  def apply(inAdjacent: MultiSet[Place[_]], outAdjacent: MultiSet[Place[_]]): TransitionFunction[Input, Output, State]
+  def apply(inAdjacent: MultiSet[Place[_]], outAdjacent: MultiSet[Place[_]]): TransitionTask[Input, Output, State]
 
   /**
    * The state event sourcing function.

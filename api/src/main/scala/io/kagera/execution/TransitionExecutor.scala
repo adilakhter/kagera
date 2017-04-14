@@ -1,17 +1,29 @@
 package io.kagera.execution
 
-import io.kagera.api.colored._
+import fs2.{ Strategy, Task }
+import io.kagera.api.colored.{ Transition, _ }
 
-trait TransitionExecutor[State, T[_, _, _]] {
+class TransitionExecutor[State](topology: ColoredPetriNet, taskProvider: TransitionTaskProvider[State, Place, Transition])(implicit strategy: Strategy) {
 
-  /**
-   * Given a transition returns an TransitionFunction
-   *
-   * @param transition
-   *
-   * @tparam Input  The input type of the transition.
-   * @tparam Output The output type of the transition.
-   * @return
-   */
-  def apply[Input, Output](transition: T[Input, Output, State]): TransitionFunction[Input, Output, State]
+  val cachedTransitionFunctions: Map[Transition[_, _, _], _] =
+    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology.inMarking(t), topology.outMarking(t), t.asInstanceOf[Transition[Any, Any, State]])).toMap
+
+  def transitionFunction[Input, Output](t: Transition[Input, Output, State]) =
+    cachedTransitionFunctions(t).asInstanceOf[TransitionTask[Input, Output, State]]
+
+  def apply[Input, Output](t: Transition[Input, Output, State]): TransitionTask[Input, Output, State] = {
+    (consume, state, input) ⇒
+
+      val handleFailure: PartialFunction[Throwable, Task[(Marking, Output)]] = {
+        case e: Throwable ⇒ Task.fail(e)
+      }
+
+      if (consume.multiplicities != topology.inMarking(t)) {
+        Task.fail(new IllegalArgumentException(s"Transition $t may not consume $consume"))
+      }
+
+      try {
+        transitionFunction(t)(consume, state, input).handleWith { handleFailure }.async
+      } catch { handleFailure }
+  }
 }

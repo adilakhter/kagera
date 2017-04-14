@@ -33,7 +33,7 @@ package object colored {
    * @tparam Output The output emitted by the transition.
    * @tparam State  The state the transition closes over.
    */
-  type TransitionFunction[Input, Output, State] = (Marking, State, Input) ⇒ Task[(Marking, Output)]
+  type TransitionTask[Input, Output, State] = (Marking, State, Input) ⇒ Task[(Marking, Output)]
 
   /**
    * An exception handler function associated with a transition.

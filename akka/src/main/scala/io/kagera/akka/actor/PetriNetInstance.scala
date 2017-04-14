@@ -11,8 +11,9 @@ import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
 import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored._
-import io.kagera.execution.EventSourcing._
 import io.kagera.execution._
+import io.kagera.execution.EventSourcing._
+import io.kagera.execution.StateFunctions._
 import io.kagera.persistence.ObjectSerializer
 
 import scala.collection.JavaConverters._
@@ -37,7 +38,7 @@ object PetriNetInstance {
   }
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
-    Props(new PetriNetInstance[S](topology, settings, new AsyncTransitionExecutor[S](topology)(settings.evaluationStrategy)))
+    Props(new PetriNetInstance[S](topology, settings, new TransitionExecutor[S](topology, new ColoredTransitionTaskProvider[S])(settings.evaluationStrategy)))
 }
 
 /**
@@ -46,7 +47,7 @@ object PetriNetInstance {
 class PetriNetInstance[S](
     topology: ExecutablePetriNet[S],
     settings: Settings,
-    executor: TransitionExecutor[S, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    executor: TransitionExecutor[S]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
 
   import PetriNetInstance._
 
@@ -180,7 +181,7 @@ class PetriNetInstance[S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      fireTransitionById[S](transitionId, input).run(instance).value match {
+      createJob[S](transitionId, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
