@@ -1,12 +1,10 @@
 package io.kagera.execution
 
-import java.io.{ PrintWriter, StringWriter }
-
-import cats.data.{ State, _ }
+import cats.data.State
 import fs2.Task
 import io.kagera.api._
 import io.kagera.api.colored.{ Transition, _ }
-import io.kagera.execution.EventSourcing.{ TransitionEvent, TransitionFailedEvent, TransitionFiredEvent }
+import io.kagera.execution.EventSourcing.TransitionEvent
 
 object StateFunctions {
 
@@ -33,7 +31,7 @@ object StateFunctions {
    * Creates a job for a specific input & marking. Does not do any validation on the parameters
    */
   def createJob[E, S](transition: Transition[Any, E, S], consume: Marking, input: Any): Instance[S] ⇒ (Instance[S], Job[S, E]) = s ⇒ {
-    val job = Job[S, E](s.nextJobId(), s.state, transition, consume, input)
+    val job = Job[S, E](s.nextJobId(), s.state, transition.id, consume, input)
     val newState = s.copy(jobs = s.jobs + (job.id -> job))
     (newState, job)
   }
@@ -57,7 +55,7 @@ object StateFunctions {
       case (t, markings) ⇒ t.isAutomated && !instance.isBlockedReason(t.id).isDefined
     }.map {
       case (t, markings) ⇒
-        val job = Job[S, Any](instance.nextJobId(), instance.state, t.asInstanceOf[Transition[Any, Any, S]], markings.head, ())
+        val job = Job[S, Any](instance.nextJobId(), instance.state, t.id, markings.head, ())
         (instance.copy(jobs = instance.jobs + (job.id -> job)), Some(job))
     }.getOrElse((instance, None))
   }
@@ -73,34 +71,12 @@ object StateFunctions {
 
   def applyJobs[S](executor: TransitionExecutor[S])(jobs: Set[Job[S, _]]): State[Instance[S], List[TransitionEvent]] = {
     State { instance ⇒
-      val events = Task.traverse(jobs.toSeq)(job ⇒ runJobAsync(executor)(job)).unsafeRun()
+      val events = Task.traverse(jobs.toSeq)(job ⇒ executor.runJobAsync(job)).unsafeRun()
       val updated = events.foldLeft(instance) { (s, e) ⇒
         val appliedEvent = EventSourcing.apply(s)(e)
         appliedEvent.copy(jobs = appliedEvent.jobs - e.jobId)
       }
       (updated, events.toList)
-    }
-  }
-
-  /**
-   * Executes a job returning a Task[TransitionEvent]
-   */
-  def runJobAsync[S, E](executor: TransitionExecutor[S])(job: Job[S, E]): Task[TransitionEvent] = {
-    val startTime = System.currentTimeMillis()
-
-    executor(job.transition)(job.consume, job.processState, job.input).map {
-      case (produced, out) ⇒
-        TransitionFiredEvent(job.id, job.transition.id, startTime, System.currentTimeMillis(), job.consume, produced, Some(out))
-    }.handle {
-      case e: Throwable ⇒
-        val failureCount = job.failureCount + 1
-        val failureStrategy = job.transition.exceptionStrategy(e, failureCount)
-
-        val sw = new StringWriter()
-        e.printStackTrace(new PrintWriter(sw))
-        val stackTraceString = sw.toString
-
-        TransitionFailedEvent(job.id, job.transition.id, startTime, System.currentTimeMillis(), job.consume, Some(job.input), stackTraceString, failureStrategy)
     }
   }
 }

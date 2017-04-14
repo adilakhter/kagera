@@ -9,7 +9,7 @@ import io.kagera.api.colored.{ Marking, Transition, _ }
 case class Job[S, E](
     id: Long,
     processState: S,
-    transition: Transition[Any, E, S],
+    transitionId: Long,
     consume: Marking,
     input: Any,
     failure: Option[ExceptionState] = None) {

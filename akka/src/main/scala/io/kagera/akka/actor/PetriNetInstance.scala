@@ -38,7 +38,8 @@ object PetriNetInstance {
   }
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
-    Props(new PetriNetInstance[S](topology, settings, new TransitionExecutor[S](topology, new ColoredTransitionTaskProvider[S])(settings.evaluationStrategy)))
+    Props(new PetriNetInstance[S](topology, settings,
+      new TransitionExecutor[S](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy)))
 }
 
 /**
@@ -219,17 +220,18 @@ class PetriNetInstance[S](
 
   def executeJob[E](job: Job[S, E], originalSender: ActorRef) = {
 
+    val transition = topology.transitions.getById(job.transitionId)
     val mdc = Map(
       "kageraEvent" -> "FiringTransition",
       "processId" -> processId,
       "jobId" -> job.id,
-      "transitionId" -> job.transition.id,
-      "transitionLabel" -> job.transition.label,
+      "transitionId" -> transition.id,
+      "transitionLabel" -> transition.label,
       "timeStarted" -> System.currentTimeMillis()
     )
 
-    logWithMDC(Logging.DebugLevel, s"Firing transition ${job.transition}", mdc)
-    runJobAsync(executor)(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    logWithMDC(Logging.DebugLevel, s"Firing transition ${transition.label}", mdc)
+    executor.runJobAsync(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
   def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
