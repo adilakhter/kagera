@@ -1,6 +1,5 @@
 package io.kagera.execution
 
-import io.kagera.api.colored._
 import io.kagera.api.multiset._
 
 trait TransitionTaskProvider[State, P[_], T[_, _, _]] {

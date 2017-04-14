@@ -2,7 +2,7 @@ package io.kagera.api.colored
 
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.multiset.MultiSet
-import io.kagera.execution.TransitionExceptionHandler
+import io.kagera.execution.{ TransitionExceptionHandler, TransitionTask }
 
 /**
  * A transition in a Colored Petri Net
