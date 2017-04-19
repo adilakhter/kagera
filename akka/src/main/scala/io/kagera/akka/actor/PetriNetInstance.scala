@@ -39,7 +39,7 @@ object PetriNetInstance {
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
     Props(new PetriNetInstance[S](topology, settings,
-      new TransitionExecutor[S](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy)))
+      new TransitionExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
 }
 
 /**
@@ -48,7 +48,7 @@ object PetriNetInstance {
 class PetriNetInstance[S](
     topology: ExecutablePetriNet[S],
     settings: Settings,
-    executor: TransitionExecutor[S]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    executor: TransitionExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
 
   import PetriNetInstance._
 

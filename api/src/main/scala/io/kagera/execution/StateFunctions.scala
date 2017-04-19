@@ -69,7 +69,7 @@ object StateFunctions {
       case Some(job) ⇒ newEnabledJobs[S].map(_ + job)
     }
 
-  def applyJobs[S](executor: TransitionExecutor[S])(jobs: Set[Job[S, _]]): State[Instance[S], List[TransitionEvent]] = {
+  def applyJobs[S, P[_], T[_, _, _]](executor: TransitionExecutor[S, P, T])(jobs: Set[Job[S, _]]): State[Instance[S], List[TransitionEvent]] = {
     State { instance ⇒
       val events = Task.traverse(jobs.toSeq)(job ⇒ executor.runJobAsync(job)).unsafeRun()
       val updated = events.foldLeft(instance) { (s, e) ⇒

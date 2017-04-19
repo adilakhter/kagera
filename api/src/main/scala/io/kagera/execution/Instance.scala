@@ -10,7 +10,7 @@ object Instance {
 }
 
 /**
- * Keeps the state of a 'running' petri net instance.
+ * Keeps the state of a petri net instance.
  */
 case class Instance[S](
     process: ExecutablePetriNet[S],

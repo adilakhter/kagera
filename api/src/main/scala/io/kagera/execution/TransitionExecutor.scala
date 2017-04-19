@@ -4,21 +4,21 @@ import java.io.{ PrintWriter, StringWriter }
 
 import fs2.{ Strategy, Task }
 import io.kagera.api._
-import io.kagera.api.colored.{ Transition, _ }
-import io.kagera.execution.EventSourcing.{ TransitionEvent, TransitionFailedEvent, TransitionFiredEvent }
+import io.kagera.api.colored._
+import io.kagera.execution.EventSourcing._
 
-class TransitionExecutor[State](
-    topology: ColoredPetriNet,
-    taskProvider: TransitionTaskProvider[State, Place, Transition],
-    exceptionHandlerFn: Transition[_, _, _] ⇒ TransitionExceptionHandler)(implicit strategy: Strategy) {
+class TransitionExecutor[State, P[_], T[_, _, _]](
+    topology: PetriNet[P[_], T[_, _, _]],
+    taskProvider: TransitionTaskProvider[State, P, T],
+    exceptionHandlerFn: T[_, _, _] ⇒ TransitionExceptionHandler)(implicit strategy: Strategy, id: Identifiable[T[_, _, _]]) {
 
-  val cachedTransitionFunctions: Map[Transition[_, _, _], _] =
-    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology.inMarking(t), topology.outMarking(t), t.asInstanceOf[Transition[Any, Any, State]])).toMap
+  val cachedTransitionTasks: Map[T[_, _, _], _] =
+    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology.inMarking(t), topology.outMarking(t), t.asInstanceOf[T[Any, Any, State]])).toMap
 
-  def transitionFunction[Input, Output](t: Transition[Input, Output, State]) =
-    cachedTransitionFunctions(t).asInstanceOf[TransitionTask[Input, Output, State]]
+  def transitionFunction[Input, Output](t: T[Input, Output, State]) =
+    cachedTransitionTasks(t).asInstanceOf[TransitionTask[Input, Output, State]]
 
-  def apply[Input, Output](t: Transition[Input, Output, State]): TransitionTask[Input, Output, State] = {
+  def apply[Input, Output](t: T[Input, Output, State]): TransitionTask[Input, Output, State] = {
     (consume, state, input) ⇒
 
       val handleFailure: PartialFunction[Throwable, Task[(Marking, Output)]] = {
@@ -40,7 +40,7 @@ class TransitionExecutor[State](
   def runJobAsync[E](job: Job[State, E]): Task[TransitionEvent] = {
 
     val startTime = System.currentTimeMillis()
-    val transition = topology.transitions.getById(job.transitionId).asInstanceOf[Transition[Any, Any, State]]
+    val transition = topology.transitions.getById(job.transitionId).asInstanceOf[T[Any, Any, State]]
 
     apply(transition)(job.consume, job.processState, job.input).map {
       case (produced, out) ⇒
