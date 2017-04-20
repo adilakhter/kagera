@@ -9,10 +9,11 @@ import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
-import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored._
-import io.kagera.execution.EventSourcing._
 import io.kagera.execution._
+import io.kagera.execution.EventSourcing._
+import io.kagera.execution.StateFunctions._
 import io.kagera.persistence.ObjectSerializer
 
 import scala.collection.JavaConverters._
@@ -37,7 +38,8 @@ object PetriNetInstance {
   }
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
-    Props(new PetriNetInstance[S](topology, settings, new AsyncTransitionExecutor[S](topology)(settings.evaluationStrategy)))
+    Props(new PetriNetInstance[S](topology, settings,
+      new TransitionExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
 }
 
 /**
@@ -46,7 +48,7 @@ object PetriNetInstance {
 class PetriNetInstance[S](
     topology: ExecutablePetriNet[S],
     settings: Settings,
-    executor: TransitionExecutor[S, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    executor: TransitionExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
 
   import PetriNetInstance._
 
@@ -180,7 +182,7 @@ class PetriNetInstance[S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      fireTransitionById[S](transitionId, input).run(instance).value match {
+      createJob[S](transitionId, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
@@ -218,17 +220,18 @@ class PetriNetInstance[S](
 
   def executeJob[E](job: Job[S, E], originalSender: ActorRef) = {
 
+    val transition = topology.transitions.getById(job.transitionId)
     val mdc = Map(
       "kageraEvent" -> "FiringTransition",
       "processId" -> processId,
       "jobId" -> job.id,
-      "transitionId" -> job.transition.id,
-      "transitionLabel" -> job.transition.label,
+      "transitionId" -> transition.id,
+      "transitionLabel" -> transition.label,
       "timeStarted" -> System.currentTimeMillis()
     )
 
-    logWithMDC(Logging.DebugLevel, s"Firing transition ${job.transition}", mdc)
-    runJobAsync(executor)(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    logWithMDC(Logging.DebugLevel, s"Firing transition ${transition.label}", mdc)
+    executor.runJobAsync(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
   def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {

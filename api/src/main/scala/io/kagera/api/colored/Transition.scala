@@ -1,9 +1,8 @@
 package io.kagera.api.colored
 
-import io.kagera.api.colored.ExceptionStrategy.BlockTransition
+import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.multiset.MultiSet
-
-import scala.concurrent.duration.Duration
+import io.kagera.execution.{ TransitionExceptionHandler, TransitionTask }
 
 /**
  * A transition in a Colored Petri Net
@@ -74,7 +73,7 @@ trait Transition[Input, Output, State] {
    * @param outAdjacent
    * @return
    */
-  def apply(inAdjacent: MultiSet[Place[_]], outAdjacent: MultiSet[Place[_]]): TransitionFunction[Input, Output, State]
+  def apply(inAdjacent: MultiSet[Place[_]], outAdjacent: MultiSet[Place[_]]): TransitionTask[Input, Output, State]
 
   /**
    * The state event sourcing function.

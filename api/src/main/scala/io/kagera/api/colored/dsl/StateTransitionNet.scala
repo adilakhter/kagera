@@ -1,9 +1,10 @@
 package io.kagera.api.colored.dsl
 
 import fs2.Task
-import io.kagera.api.colored.ExceptionStrategy.BlockTransition
+import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.colored.transitions.{ AbstractTransition, UncoloredTransition }
 import io.kagera.api.colored.{ Marking, Transition, _ }
+import io.kagera.execution.TransitionExceptionHandler
 
 import scala.util.Random
 

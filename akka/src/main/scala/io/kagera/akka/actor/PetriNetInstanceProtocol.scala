@@ -1,8 +1,8 @@
 package io.kagera.akka.actor
 
-import io.kagera.api.colored.ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored.{ ExceptionStrategy, Marking, Transition }
-import io.kagera.execution.{ Instance, Job }
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
+import io.kagera.api.colored.{ Marking, Transition }
+import io.kagera.execution.{ ExceptionStrategy, Instance, Job }
 
 /**
  * Describes the messages to and from a PetriNetInstance actor.
@@ -13,7 +13,7 @@ object PetriNetInstanceProtocol {
     InstanceState(instance.sequenceNr, instance.marking, instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
 
   implicit def fromExecutionJob[S, E](job: io.kagera.execution.Job[S, E]): JobState =
-    JobState(job.id, job.transition.id, job.consume, job.input, job.failure.map(fromExecutionExceptionState(_)))
+    JobState(job.id, job.transitionId, job.consume, job.input, job.failure.map(fromExecutionExceptionState(_)))
 
   implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
     ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)

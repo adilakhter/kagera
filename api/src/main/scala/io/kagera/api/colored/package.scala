@@ -27,20 +27,6 @@ package object colored {
   type MarkedPlace[Color] = (Place[Color], MultiSet[Color])
 
   /**
-   * An (asynchronous) function associated with a transition
-   *
-   * @tparam Input  The input delivered to the transition from outside the process.
-   * @tparam Output The output emitted by the transition.
-   * @tparam State  The state the transition closes over.
-   */
-  type TransitionFunction[Input, Output, State] = (Marking, State, Input) ⇒ Task[(Marking, Output)]
-
-  /**
-   * An exception handler function associated with a transition.
-   */
-  type TransitionExceptionHandler = (Throwable, Int) ⇒ ExceptionStrategy
-
-  /**
    * Type alias for a colored petri net.
    */
   type ColoredPetriNet = PetriNet[Place[_], Transition[_, _, _]]
