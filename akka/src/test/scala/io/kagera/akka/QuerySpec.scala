@@ -2,10 +2,9 @@ package io.kagera.akka
 
 import java.util.UUID
 
-import akka.actor.ActorSystem
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.scaladsl.{ CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, PersistenceIdsQuery, ReadJournal }
+import akka.persistence.query.scaladsl.{ AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
@@ -14,7 +13,7 @@ import io.kagera.akka.query.PetriNetQuery
 import io.kagera.api.colored.dsl._
 import io.kagera.api.colored.{ Marking, Place }
 import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
-import org.scalatest.{ BeforeAndAfter, BeforeAndAfterEach }
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._
 
 import scala.collection.immutable._
@@ -82,7 +81,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
-          .asInstanceOf[ReadJournal with PersistenceIdsQuery]
+          .asInstanceOf[ReadJournal with AllPersistenceIdsQuery]
 
       // Setup petriNet and instances
 
