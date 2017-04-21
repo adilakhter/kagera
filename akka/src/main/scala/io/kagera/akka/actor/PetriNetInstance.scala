@@ -39,7 +39,7 @@ object PetriNetInstance {
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
     Props(new PetriNetInstance[S](topology, settings,
-      new TransitionExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
+      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
 }
 
 /**
@@ -48,7 +48,7 @@ object PetriNetInstance {
 class PetriNetInstance[S](
     topology: ExecutablePetriNet[S],
     settings: Settings,
-    executor: TransitionExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    executor: JobExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
 
   import PetriNetInstance._
 
@@ -231,7 +231,7 @@ class PetriNetInstance[S](
     )
 
     logWithMDC(Logging.DebugLevel, s"Firing transition ${transition.label}", mdc)
-    executor.runJobAsync(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    executor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
   def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
