@@ -387,7 +387,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       )
 
       // creates a petri net actor with initial marking: p1 -> 1
-      val initialMarking = Marking.empty
+      val initialMarking = Marking.empty[Place]
 
       val actor = createPetriNetActor(petriNet)
 

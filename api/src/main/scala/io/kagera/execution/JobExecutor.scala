@@ -47,7 +47,7 @@ class JobExecutor[State, P[_], T[_, _, _]](
 
     executeTransitionAsync(transition)(job.consume, job.processState, job.input).map {
       case (produced, out) ⇒
-        TransitionFiredEvent(job.id, transition, startTime, System.currentTimeMillis(), job.consume, produced, Some(out))
+        TransitionFiredEvent(job.id, transition, startTime, System.currentTimeMillis(), job.consume, produced, out)
     }.handle {
       case e: Throwable ⇒
         val failureCount = job.failureCount + 1
@@ -57,7 +57,7 @@ class JobExecutor[State, P[_], T[_, _, _]](
         e.printStackTrace(new PrintWriter(sw))
         val stackTraceString = sw.toString
 
-        TransitionFailedEvent(job.id, transition, startTime, System.currentTimeMillis(), job.consume, Some(job.input), stackTraceString, failureStrategy)
+        TransitionFailedEvent(job.id, transition, startTime, System.currentTimeMillis(), job.consume, job.input, stackTraceString, failureStrategy)
     }
   }
 }

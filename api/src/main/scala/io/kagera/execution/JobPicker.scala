@@ -33,10 +33,14 @@ class JobPicker[P[_], T[_, _, _]](tokenGame: TokenGame[P[_], T[_, _, _], Marking
   /**
    * Creates a job for a specific input & marking. Does not do any validation on the parameters
    */
-  def createJob[E, S](transition: T[Any, E, S], consume: Marking[P], input: Any): Instance[P, T, S] ⇒ (Instance[P, T, S], Job[P, T, S, E]) = instance ⇒ {
+  private def createJob[E, S](transition: T[Any, E, S], consume: Marking[P], input: Any): Instance[P, T, S] ⇒ (Instance[P, T, S], Job[P, T, S, E]) = instance ⇒ {
     val job = Job[P, T, S, E](instance.nextJobId(), instance.state, transition, consume, input)
     val updatedInstance = instance.copy[P, T, S](jobs = instance.jobs + (job.id -> job))
     (updatedInstance, job)
+  }
+
+  def isFireable[S](instance: Instance[P, T, S], t: T[_, _, _]) = {
+    !(instance.isBlockedReason(t).isDefined || instance.process.incomingPlaces(t).isEmpty)
   }
 
   /**
@@ -44,7 +48,7 @@ class JobPicker[P[_], T[_, _, _]](tokenGame: TokenGame[P[_], T[_, _, _], Marking
    */
   def firstNewEnabledJob[S]: State[Instance[P, T, S], Option[Job[P, T, S, _]]] = State { instance ⇒
     tokenGame.enabledParameters(instance.process)(instance.availableMarking).find {
-      case (t, markings) ⇒ !(instance.isBlockedReason(t).isDefined || instance.process.incomingPlaces(t).isEmpty)
+      case (t, markings) ⇒ isFireable(instance, t)
     }.map {
       case (t, markings) ⇒
         val job = Job[P, T, S, Any](instance.nextJobId(), instance.state, t.asInstanceOf[T[Any, Any, S]], markings.head, ())

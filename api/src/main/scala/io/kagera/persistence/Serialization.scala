@@ -146,7 +146,7 @@ class Serialization[P[_], T[_, _, _], S](
       val transitionId = e.transitionId.getOrElse(missingFieldException("transition_id"))
       val timeStarted = e.timeStarted.getOrElse(missingFieldException("time_started"))
       val timeFailed = e.timeFailed.getOrElse(missingFieldException("time_failed"))
-      val input = e.inputData.map(deserializeObject)
+      val input = e.inputData.map(deserializeObject).getOrElse(())
       val failureReason = e.failureReason.getOrElse("")
       val consumed = deserializeConsumedMarking(instance, e.consumed)
       val failureStrategy = e.failureStrategy.getOrElse(missingFieldException("time_failed")) match {
@@ -202,7 +202,7 @@ class Serialization[P[_], T[_, _, _], S](
     val consumed: Marking[P] = deserializeConsumedMarking(instance, e.consumed)
     val produced: Marking[P] = deserializeProducedMarking(instance, e.produced)
 
-    val data = e.data.map(deserializeObject)
+    val data = e.data.map(deserializeObject).getOrElse(())
 
     val transitionId = e.transitionId.getOrElse(missingFieldException("transition_id"))
     val transition = instance.process.transitions.getById(transitionId)

@@ -19,6 +19,8 @@ class TokenGameSpec extends WordSpec {
     t2 ~> p2
   )
 
+  val tokenGame = new ColoredTokenGame()
+
   "The Colored Token game" should {
 
     "NOT mark a transition enabled if there are NOT enough tokens in in-adjacent places" in {
@@ -29,7 +31,7 @@ class TokenGameSpec extends WordSpec {
       marking.multiplicities(p1) should be(2)
 
       // t2 requires at least 3 tokens in p1 and is therefor not enabled
-      testProcess.isEnabled(marking)(t2) should be(false)
+      tokenGame.isEnabled(testProcess)(marking, t2) should be(false)
     }
 
     "DO mark a transition as enabled if there ARE enough tokens in in-adjacent places" in {
@@ -39,14 +41,14 @@ class TokenGameSpec extends WordSpec {
       marking.multiplicities(p1) should be(3)
 
       // t2 requires at least 3 tokens in p1 and is therefor not enabled
-      testProcess.isEnabled(marking)(t2) should be(true)
+      tokenGame.isEnabled(testProcess)(marking, t2) should be(true)
     }
 
     "NOT mark a transition enabled if an in-adjacent edge filters the token" in {
 
       val marking = Marking(p1(10))
 
-      testProcess.isEnabled(marking)(t1) should be(false)
+      tokenGame.isEnabled(testProcess)(marking, t1) should be(false)
     }
   }
 }
