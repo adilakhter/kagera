@@ -1,7 +1,7 @@
 package io.kagera.api
 
 /**
- * Interface for deciding which (transition, marking) parameters are 'enabled'
+ * Interface for deciding which (transition, marking) parameters are 'enabled' or 'fireable' in a petri net.
  *
  * @tparam P Place
  * @tparam T Transition
@@ -9,14 +9,12 @@ package io.kagera.api
  */
 trait TokenGame[P, T, M] {
 
-  this: PetriNet[P, T] ⇒
-
-  def enabledParameters(marking: M): Map[T, Iterable[M]] = {
-    // inefficient, fix
-    enabledTransitions(marking).view.map(t ⇒ t -> consumableMarkings(marking)(t)).toMap
+  def enabledParameters(petriNet: PetriNet[P, T])(marking: M): Map[T, Iterable[M]] = {
+    // TODO inefficient, fix
+    enabledTransitions(petriNet)(marking).view.map(t ⇒ t -> consumableMarkings(petriNet)(marking, t)).toMap
   }
 
-  def consumableMarkings(marking: M)(t: T): Iterable[M]
+  def consumableMarkings(petriNet: PetriNet[P, T])(marking: M, t: T): Iterable[M]
 
   /**
    * Checks whether a transition is 'enabled' in a marking.
@@ -25,7 +23,7 @@ trait TokenGame[P, T, M] {
    * @param t The transition.
    * @return
    */
-  def isEnabled(marking: M)(t: T): Boolean = consumableMarkings(marking)(t).nonEmpty
+  def isEnabled(petriNet: PetriNet[P, T])(marking: M, t: T): Boolean = consumableMarkings(petriNet)(marking, t).nonEmpty
 
   /**
    * Returns all enabled transitions for a marking.
@@ -33,5 +31,5 @@ trait TokenGame[P, T, M] {
    * @param marking marking
    * @return
    */
-  def enabledTransitions(marking: M): Set[T]
+  def enabledTransitions(petriNet: PetriNet[P, T])(marking: M): Iterable[T]
 }

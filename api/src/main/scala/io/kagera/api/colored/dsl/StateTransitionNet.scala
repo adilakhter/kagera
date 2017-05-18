@@ -17,7 +17,7 @@ trait StateTransitionNet[S, E] {
     new AbstractTransition[Unit, E, S](id, label.getOrElse(s"t$id"), automated, exceptionStrategy) with UncoloredTransition[Unit, E, S] {
       override val toString = label
       override val updateState = eventSourcing
-      override def produceEvent(consume: Marking, state: S, input: Unit): Task[E] = Task.delay { (fn(state)) }
+      override def produceEvent(consume: Marking[Place], state: S, input: Unit): Task[E] = Task.delay { (fn(state)) }
     }
 
   def createPetriNet(arcs: Arc*) = dsl.createPetriNet[S](arcs: _*)

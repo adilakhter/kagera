@@ -3,16 +3,15 @@ package io.kagera.api.colored
 import io.kagera.api._
 import io.kagera.api.multiset._
 
-trait ColoredTokenGame extends TokenGame[Place[_], Transition[_, _, _], Marking] {
-  this: ColoredPetriNet ⇒
+class ColoredTokenGame extends TokenGame[Place[_], Transition[_, _, _], Marking[Place]] {
 
-  override def enabledParameters(m: Marking): Map[Transition[_, _, _], Iterable[Marking]] =
-    enabledTransitions(m).view.map(t ⇒ t -> consumableMarkings(m)(t)).toMap
+  override def enabledParameters(petriNet: ColoredPetriNet)(m: Marking[Place]): Map[Transition[_, _, _], Iterable[Marking[Place]]] =
+    enabledTransitions(petriNet)(m).view.map(t ⇒ t -> consumableMarkings(petriNet)(m, t)).toMap
 
-  def consumableMarkings(marking: Marking)(t: Transition[_, _, _]): Iterable[Marking] = {
+  def consumableMarkings(petriNet: ColoredPetriNet)(marking: Marking[Place], t: Transition[_, _, _]): Iterable[Marking[Place]] = {
     // TODO this is not the most efficient, should break early when consumable tokens < edge weight
-    val consumable = inMarking(t).map {
-      case (place, count) ⇒ (place, count, consumableTokens(marking, place, t))
+    val consumable = petriNet.inMarking(t).map {
+      case (place, count) ⇒ (place, count, consumableTokens(petriNet)(marking, place, t))
     }
 
     // check if any
@@ -28,10 +27,9 @@ trait ColoredTokenGame extends TokenGame[Place[_], Transition[_, _, _], Marking]
     }
   }
 
-  def consumableTokens[C](marking: Marking, p: Place[C], t: Transition[_, _, _]): MultiSet[C] = {
+  def consumableTokens[C](petriNet: ColoredPetriNet)(marking: Marking[Place], p: Place[C], t: Transition[_, _, _]): MultiSet[C] = {
 
-    val pn = this
-    val edge = pn.getEdge(p, t).get
+    val edge = petriNet.getEdge(p, t).get
 
     marking.get(p) match {
       case None         ⇒ MultiSet.empty
@@ -40,5 +38,6 @@ trait ColoredTokenGame extends TokenGame[Place[_], Transition[_, _, _], Marking]
   }
 
   // TODO optimize, no need to process all transitions
-  override def enabledTransitions(marking: Marking): Set[Transition[_, _, _]] = transitions.filter(t ⇒ consumableMarkings(marking)(t).nonEmpty)
+  override def enabledTransitions(petriNet: ColoredPetriNet)(marking: Marking[Place]): Set[Transition[_, _, _]] =
+    petriNet.transitions.filter(t ⇒ consumableMarkings(petriNet)(marking, t).nonEmpty)
 }

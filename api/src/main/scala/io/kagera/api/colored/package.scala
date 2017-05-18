@@ -24,7 +24,7 @@ package object colored {
    *
    * @tparam Color the color of the place.
    */
-  type MarkedPlace[Color] = (Place[Color], MultiSet[Color])
+  type MarkedPlace[P[_], Color] = (P[Color], MultiSet[Color])
 
   /**
    * Type alias for a colored petri net.
@@ -34,44 +34,45 @@ package object colored {
   /**
    * Type alias for a marking.
    */
-  type Marking = HMap[Place, MultiSet]
+  type Marking[P[_]] = HMap[P, MultiSet]
 
   /**
    * Some convenience method additions to work with Markings.
    */
-  implicit class MarkingAdditions(marking: Marking) {
+  implicit class MarkingAdditions[P[_]](marking: Marking[P]) {
 
     // Note: extra .map(identity) is a needed to workaround the scala Map serialization bug: https://issues.scala-lang.org/browse/SI-7005
-    def multiplicities: MultiSet[Place[_]] = marking.data.mapValues(_.multisetSize).map(identity)
+    def multiplicities: MultiSet[P[_]] = marking.data.mapValues(_.multisetSize).map(identity)
 
-    def add[C](p: Place[C], value: C, count: Int = 1): Marking = {
+    def add[C](p: P[C], value: C, count: Int = 1): Marking[P] = {
       val newTokens = marking.getOrElse(p, MultiSet.empty).multisetIncrement(value, count)
       marking.+(p -> newTokens)
     }
 
-    def |-|(other: Marking): Marking = other.keySet.foldLeft(marking) {
+    def |-|(other: Marking[P]): Marking[P] = other.keySet.foldLeft(marking) {
 
       case (result, place) ⇒
-        marking.get(place) match {
+        val p = place.asInstanceOf[P[Any]]
+        marking.get(p) match {
           case None ⇒ result
           case Some(tokens) ⇒
-            val newTokens = tokens.multisetDifference(other(place))
+            val newTokens = tokens.multisetDifference(other(p))
             if (newTokens.isEmpty)
-              result - place
+              result - p
             else
-              result + (place -> newTokens)
+              result + (p -> newTokens)
         }
     }
 
-    def |+|(other: Marking): Marking = other.keySet.foldLeft(marking) {
+    def |+|(other: Marking[P]): Marking[P] = other.keySet.foldLeft(marking) {
       case (result, place) ⇒
-
-        val newTokens = marking.get(place) match {
-          case None         ⇒ other(place)
-          case Some(tokens) ⇒ tokens.multisetSum(other(place))
+        val p = place.asInstanceOf[P[Any]]
+        val newTokens = marking.get(p) match {
+          case None         ⇒ other(p)
+          case Some(tokens) ⇒ tokens.multisetSum(other(p))
         }
 
-        result + (place -> newTokens)
+        result + (p -> newTokens)
     }
   }
 
@@ -92,19 +93,19 @@ package object colored {
    *
    * @tparam S The 'global' state transitions close over
    */
-  type ExecutablePetriNet[S] = ColoredPetriNet with ColoredTokenGame
+  type ExecutablePetriNet[S] = ColoredPetriNet
 
-  implicit def toMarkedPlace(tuple: (Place[Unit], Int)): MarkedPlace[Unit] = tuple._1 -> Map[Unit, Int](() -> tuple._2)
+  implicit def toMarkedPlace[P[_]](tuple: (P[Unit], Int)): MarkedPlace[P, Unit] = tuple._1 -> Map[Unit, Int](() -> tuple._2)
 
-  implicit class IterableToMarking(i: Iterable[(Place[_], MultiSet[_])]) {
-    def toMarking: Marking = HMap[Place, MultiSet](i.toMap[Place[_], MultiSet[_]])
+  implicit class IterableToMarking[P[_]](i: Iterable[(P[_], MultiSet[_])]) {
+    def toMarking: Marking[P] = HMap[P, MultiSet](i.toMap[P[_], MultiSet[_]])
   }
 
-  implicit class MultiSetToMarking(m: MultiSet[Place[_]]) {
-    def toMarking: Marking = m.map { case (p, n) ⇒ p -> Map(() -> n) }.toMarking
+  implicit class MultiSetToMarking[P[_]](m: MultiSet[P[_]]) {
+    def toMarking: Marking[P] = m.map { case (p, n) ⇒ p -> Map(() -> n) }.toMarking
   }
 
-  implicit def toColoredMarking(m: MultiSet[Place[_]]): Marking = m.toMarking
+  //  implicit def toMarking[P[_]](m: MultiSet[P[_]]): Marking[P] = m.toMarking
 
   implicit class ColoredPetriNetAdditions(petriNet: ColoredPetriNet) {
     def getEdge(p: Place[_], t: Transition[_, _, _]): Option[PTEdge[Any]] = petriNet.innerGraph.findPTEdge(p, t).map(_.label.asInstanceOf[PTEdge[Any]])

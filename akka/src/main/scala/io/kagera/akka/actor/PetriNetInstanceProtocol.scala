@@ -1,7 +1,7 @@
 package io.kagera.akka.actor
 
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored.{ Marking, Transition }
+import io.kagera.api.colored.{ Marking, Place, Transition }
 import io.kagera.execution.{ ExceptionStrategy, Instance, Job }
 
 /**
@@ -9,11 +9,11 @@ import io.kagera.execution.{ ExceptionStrategy, Instance, Job }
  */
 object PetriNetInstanceProtocol {
 
-  implicit def fromExecutionInstance[T](instance: io.kagera.execution.Instance[T]): InstanceState =
+  implicit def fromExecutionInstance[S](instance: io.kagera.execution.Instance[Place, Transition, S]): InstanceState =
     InstanceState(instance.sequenceNr, instance.marking, instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
 
-  implicit def fromExecutionJob[S, E](job: io.kagera.execution.Job[S, E]): JobState =
-    JobState(job.id, job.transitionId, job.consume, job.input, job.failure.map(fromExecutionExceptionState(_)))
+  implicit def fromExecutionJob[S, E](job: io.kagera.execution.Job[Place, Transition, S, E]): JobState =
+    JobState(job.id, job.transition.id, job.consume, job.input, job.failure.map(fromExecutionExceptionState(_)))
 
   implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
     ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
@@ -30,13 +30,13 @@ object PetriNetInstanceProtocol {
 
   object Initialize {
 
-    def apply(marking: Marking): Initialize = Initialize(marking, ())
+    def apply(marking: Marking[Place]): Initialize = Initialize(marking, ())
   }
 
   /**
    * Command to initialize a petri net instance.
    */
-  case class Initialize(marking: Marking, state: Any) extends Command
+  case class Initialize(marking: Marking[Place], state: Any) extends Command
 
   object FireTransition {
 
@@ -76,7 +76,7 @@ object PetriNetInstanceProtocol {
    * This message is only send in response to an Initialize message.
    */
   case class Initialized(
-    marking: Marking,
+    marking: Marking[Place],
     state: Any) extends Response
 
   /**
@@ -92,8 +92,8 @@ object PetriNetInstanceProtocol {
   case class TransitionFired(
     jobId: Long,
     override val transitionId: Long,
-    consumed: Marking,
-    produced: Marking,
+    consumed: Marking[Place],
+    produced: Marking[Place],
     result: InstanceState,
     newJobsIds: Set[Long]) extends TransitionResponse
 
@@ -103,7 +103,7 @@ object PetriNetInstanceProtocol {
   case class TransitionFailed(
     jobId: Long,
     override val transitionId: Long,
-    consume: Marking,
+    consume: Marking[Place],
     input: Any,
     reason: String,
     strategy: ExceptionStrategy) extends TransitionResponse
@@ -129,7 +129,7 @@ object PetriNetInstanceProtocol {
   case class JobState(
       id: Long,
       transitionId: Long,
-      consumedMarking: Marking,
+      consumedMarking: Marking[Place],
       input: Any,
       exceptionState: Option[ExceptionState]) {
 
@@ -145,14 +145,14 @@ object PetriNetInstanceProtocol {
    */
   case class InstanceState(
       sequenceNr: Long,
-      marking: Marking,
+      marking: Marking[Place],
       state: Any,
       jobs: Map[Long, JobState]) extends Response {
 
     @transient
-    lazy val reservedMarking: Marking = jobs.map { case (id, job) ⇒ job.consumedMarking }.reduceOption(_ |+| _).getOrElse(Marking.empty)
+    lazy val reservedMarking: Marking[Place] = jobs.map { case (id, job) ⇒ job.consumedMarking }.reduceOption(_ |+| _).getOrElse(Marking.empty)
 
     @transient
-    lazy val availableMarking: Marking = marking |-| reservedMarking
+    lazy val availableMarking: Marking[Place] = marking |-| reservedMarking
   }
 }

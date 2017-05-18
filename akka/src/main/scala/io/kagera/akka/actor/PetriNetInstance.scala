@@ -13,7 +13,7 @@ import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.api.colored._
 import io.kagera.execution._
 import io.kagera.execution.EventSourcing._
-import io.kagera.execution.StateFunctions._
+import io.kagera.execution.JobPicker._
 import io.kagera.persistence.ObjectSerializer
 
 import scala.collection.JavaConverters._
@@ -39,7 +39,9 @@ object PetriNetInstance {
 
   def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
     Props(new PetriNetInstance[S](topology, settings,
-      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
+      new JobPicker[Place, Transition](new ColoredTokenGame()),
+      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S],
+        t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
 }
 
 /**
@@ -48,7 +50,8 @@ object PetriNetInstance {
 class PetriNetInstance[S](
     topology: ExecutablePetriNet[S],
     settings: Settings,
-    executor: JobExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    jobPicker: JobPicker[Place, Transition],
+    jobExecutor: JobExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
 
   import PetriNetInstance._
 
@@ -91,7 +94,7 @@ class PetriNetInstance[S](
       context.stop(context.self)
   }
 
-  def running(instance: Instance[S], scheduledRetries: Map[Long, Cancellable]): Receive = {
+  def running(instance: Instance[Place, Transition, S], scheduledRetries: Map[Long, Cancellable]): Receive = {
 
     case SupervisorStrategy.Stop ⇒
       scheduledRetries.values.foreach(_.cancel())
@@ -182,7 +185,7 @@ class PetriNetInstance[S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      createJob[S](transitionId, input).run(instance).value match {
+      jobPicker.createJob[S, Any, Any](transition, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
@@ -202,9 +205,9 @@ class PetriNetInstance[S](
   }
 
   // TODO remove side effecting here
-  def step(instance: Instance[S]): (Instance[S], Set[Job[S, _]]) = {
+  def step(instance: Instance[Place, Transition, S]): (Instance[Place, Transition, S], Set[Job[Place, Transition, S, _]]) = {
 
-    newEnabledJobs.run(instance).value match {
+    jobPicker.enabledJobs.run(instance).value match {
       case (updatedInstance, jobs) ⇒
 
         if (jobs.isEmpty && updatedInstance.activeJobs.isEmpty)
@@ -218,7 +221,7 @@ class PetriNetInstance[S](
     }
   }
 
-  def executeJob[E](job: Job[S, E], originalSender: ActorRef) = {
+  def executeJob[E](job: Job[Place, Transition, S, E], originalSender: ActorRef) = {
 
     val transition = topology.transitions.getById(job.transitionId)
     val mdc = Map(
@@ -231,10 +234,10 @@ class PetriNetInstance[S](
     )
 
     logWithMDC(Logging.DebugLevel, s"Firing transition ${transition.label}", mdc)
-    executor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    jobExecutor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
-  def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
+  def scheduleFailedJobsForRetry(instance: Instance[Place, Transition, S]): Map[Long, Cancellable] = {
     instance.jobs.values.foldLeft(Map.empty[Long, Cancellable]) {
       case (map, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
         val newDelay = failureTime + delay - System.currentTimeMillis()
@@ -251,7 +254,7 @@ class PetriNetInstance[S](
     }
   }
 
-  override def onRecoveryCompleted(instance: Instance[S]) = {
+  override def onRecoveryCompleted(instance: Instance[Place, Transition, S]) = {
     val scheduledRetries = scheduleFailedJobsForRetry(instance)
 
     val updatedInstance = step(instance)._1
