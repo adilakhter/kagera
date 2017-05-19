@@ -7,6 +7,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.util.Timeout
 import io.kagera.akka.actor.PetriNetInstanceApi
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
+import io.kagera.api.Marking
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
 import org.scalatest.Matchers._

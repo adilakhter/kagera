@@ -6,8 +6,8 @@ import akka.actor.{ ActorRef, PoisonPill, SupervisorStrategy, Terminated }
 import akka.pattern.ask
 import akka.util.Timeout
 import io.kagera.akka.AkkaTestBase.GetChild
-import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
+import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._

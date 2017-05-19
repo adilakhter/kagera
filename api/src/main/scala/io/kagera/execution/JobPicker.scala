@@ -2,7 +2,7 @@ package io.kagera.execution
 
 import cats.data.State
 import io.kagera.api.TokenGame
-import io.kagera.api.colored._
+import io.kagera.api._
 
 /**
  * Given a token game picks the next job(s) to be executed.

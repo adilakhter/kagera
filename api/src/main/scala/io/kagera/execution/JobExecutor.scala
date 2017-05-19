@@ -4,7 +4,6 @@ import java.io.{ PrintWriter, StringWriter }
 
 import fs2.{ Strategy, Task }
 import io.kagera.api._
-import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing._
 
 /**

@@ -1,7 +1,6 @@
 package io.kagera.akka.actor
 
-import io.kagera.api.Identifiable
-import io.kagera.api.colored.{ Marking, MarkingData }
+import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 

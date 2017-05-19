@@ -1,6 +1,7 @@
 package io.kagera.api.colored.dsl
 
 import fs2.Task
+import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.colored._
 import io.kagera.api.colored.transitions.{ AbstractTransition, UncoloredTransition }

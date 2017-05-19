@@ -1,7 +1,7 @@
 package io.kagera
 
 import fs2.Task
-import io.kagera.api.colored._
+import io.kagera.api.Marking
 
 package object execution {
 

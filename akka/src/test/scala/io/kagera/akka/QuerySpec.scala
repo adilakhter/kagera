@@ -10,6 +10,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import io.kagera.akka.actor.PetriNetInstanceProtocol.{ Initialize, Initialized, TransitionFired }
 import io.kagera.akka.query.PetriNetQuery
+import io.kagera.api.Marking
 import io.kagera.api.colored.dsl._
 import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }

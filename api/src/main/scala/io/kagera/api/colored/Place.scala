@@ -1,5 +1,6 @@
 package io.kagera.api.colored
 
+import io.kagera.api.MarkedPlace
 import io.kagera.api.multiset._
 
 object Place {

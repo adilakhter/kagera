@@ -1,6 +1,5 @@
-package io.kagera.api.colored
+package io.kagera.api
 
-import io.kagera.api.{ HMap, Identifiable }
 import io.kagera.api.multiset._
 
 object Marking {

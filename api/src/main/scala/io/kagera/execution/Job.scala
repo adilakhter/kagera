@@ -1,6 +1,6 @@
 package io.kagera.execution
 
-import io.kagera.api.colored.Marking
+import io.kagera.api.Marking
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 
 /**

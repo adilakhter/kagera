@@ -9,7 +9,6 @@ import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
-import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.execution._

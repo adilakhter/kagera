@@ -1,6 +1,6 @@
 package io.kagera.execution
 
-import io.kagera.api.colored._
+import io.kagera.api.Marking
 
 import scala.collection.Map
 

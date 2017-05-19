@@ -1,5 +1,6 @@
 package io.kagera.api.colored
 
+import io.kagera.api.Marking
 import org.scalatest.Matchers._
 import org.scalatest.WordSpec
 
