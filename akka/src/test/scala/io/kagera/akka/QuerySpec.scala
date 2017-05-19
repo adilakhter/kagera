@@ -64,13 +64,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
         .request(3)
         .expectNext(InitializedEvent(marking = Marking(p1 -> 1), state = ()))
         .expectNextChainingPF {
-          case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
-            transitionId shouldBe t1.id
+          case TransitionFiredEvent(_, transition, _, _, consumed, produced, _) ⇒
+            transition shouldBe t1
             consumed shouldBe Marking(p1 -> 1)
             produced shouldBe Marking(p2 -> 1)
         }.expectNextChainingPF {
-          case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
-            transitionId shouldBe t2.id
+          case TransitionFiredEvent(_, transition, _, _, consumed, produced, _) ⇒
+            transition shouldBe t2
             consumed shouldBe Marking(p2 -> 1)
             produced shouldBe Marking(p3 -> 1)
         }
