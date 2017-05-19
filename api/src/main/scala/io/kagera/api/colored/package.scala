@@ -1,10 +1,6 @@
 package io.kagera.api
 
-import fs2.Task
 import io.kagera.api.multiset._
-
-import scala.language.existentials
-import scalax.collection.Graph
 import scalax.collection.edge.WLDiEdge
 
 package object colored {
@@ -35,6 +31,11 @@ package object colored {
    * Type alias for a marking.
    */
   type Marking[P[_]] = HMap[P, MultiSet]
+
+  /**
+   * Type alias for marking data.
+   */
+  type MarkingData = Map[Long, MultiSet[_]]
 
   /**
    * Some convenience method additions to work with Markings.

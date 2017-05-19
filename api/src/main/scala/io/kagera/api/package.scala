@@ -15,6 +15,8 @@ package object api {
   type Identifiable[T] = T ⇒ Id
   type Labeled[T] = T ⇒ Label
 
+  implicit def extractId[T](e: T)(implicit identifiable: Identifiable[T]) = identifiable(e).value
+
   implicit class LabeledFn[T : Labeled](seq: Iterable[T]) {
     def findByLabel(label: String): Option[T] = seq.find(e ⇒ implicitly[Labeled[T]].apply(e).value == label)
     def getByLabel(label: String): T  = findByLabel(label).getOrElse { throw new IllegalStateException(s"No element found with label: $label") }

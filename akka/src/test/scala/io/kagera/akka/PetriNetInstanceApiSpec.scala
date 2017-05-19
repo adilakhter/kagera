@@ -7,7 +7,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.util.Timeout
 import io.kagera.akka.actor.PetriNetInstanceApi
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
-import io.kagera.api.colored.{ Marking, Place, Transition }
+import io.kagera.api.colored._
 import io.kagera.api.colored.dsl._
 import org.scalatest.Matchers._
 
@@ -31,7 +31,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val actor = createPetriNetActor[Set[Int]](petriNet)
 
-      actor ! Initialize(initialMarking, Set.empty)
+      actor ! Initialize(Marking.marshal(initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       val api = new PetriNetInstanceApi(petriNet, actor)
@@ -63,7 +63,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val actor = createPetriNetActor[Set[Int]](petriNet)
 
-      actor ! Initialize(Marking.empty, ())
+      actor ! Initialize(Marking.marshal(Marking.empty[Place]), ())
       expectMsgClass(classOf[Initialized])
 
       val api = new PetriNetInstanceApi(petriNet, actor)
