@@ -3,30 +3,13 @@ package io.kagera.api.colored
 import io.kagera.api.{MarkedPlace, MultiSet}
 
 object Place {
-  def apply[C](id: Long, label: Option[String] = None): Place[C] = {
-
-    PlaceImpl[C](id, label.getOrElse(s"p$id"))
-  }
+  def apply[Color](id: Long): Place[Color] = Place(id, s"p$id")
 }
 
 /**
  * A Place in a colored petri net.
  */
-trait Place[Color] {
-
-  /**
-   * The unique identifier of this place.
-   *
-   * @return A unique identifier.
-   */
-  def id: Long
-
-  /**
-   * A human readable label of this place.
-   *
-   * @return The label.
-   */
-  def label: String
+case class Place[Color](val id: Long, val label: String) {
 
   def apply[T <: Color](_tokens: T*): MarkedPlace[Place, Color] = (this, MultiSet(_tokens: _*))
 }

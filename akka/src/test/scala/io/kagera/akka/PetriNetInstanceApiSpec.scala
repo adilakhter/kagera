@@ -2,18 +2,16 @@ package io.kagera.akka
 
 import akka.NotUsed
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.util.Timeout
 import io.kagera.akka.actor.PetriNetInstanceApi
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.Marking
 import io.kagera.api.colored._
-import io.kagera.api.colored.dsl._
 import org.scalatest.Matchers._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
 
 class PetriNetInstanceApiSpec extends AkkaTestBase {
 
@@ -55,7 +53,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
       val t2 = transition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
       val t3 = transition(id = 3, automated = true)(_ ⇒ Thread.sleep(200))
 
-      val petriNet = createPetriNet(
+      val petriNet = createPetriNet[Unit](
         t1 ~> p1,
         t1 ~> p2,
         p1 ~> t2,

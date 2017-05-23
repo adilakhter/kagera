@@ -10,7 +10,6 @@ import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.api.colored._
-import io.kagera.api.colored.dsl._
 import io.kagera.execution.TransitionExceptionHandler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
@@ -380,7 +379,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       val t2 = transition(id = 2, automated = true)(_ ⇒ Thread.sleep(500))
       val t3 = transition(id = 3, automated = true)(_ ⇒ Thread.sleep(500))
 
-      val petriNet = createPetriNet(
+      val petriNet = createPetriNet[Unit](
         t1 ~> p1,
         t1 ~> p2,
         p1 ~> t2,

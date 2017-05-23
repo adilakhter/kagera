@@ -11,8 +11,8 @@ import io.kagera.akka.AkkaTestBase.MockShardActor
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.api.colored
-import io.kagera.api.colored.{ ColoredPetriNet, ColoredTokenGame, ColoredTransitionTaskProvider, Place, Transition }
-import io.kagera.execution.{ Instance, JobExecutor, JobPicker }
+import io.kagera.api.colored.{ ColoredPetriNet, Place, Transition }
+import io.kagera.execution.JobExecutor
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
@@ -58,17 +58,12 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  private val coloredJobPicker = new JobPicker[Place, Transition](new ColoredTokenGame()) {
-    override def isFireable[S](instance: Instance[Place, Transition, S], t: Transition[_, _, _]): Boolean =
-      t.isAutomated && !instance.isBlockedReason(t).isDefined
-  }
-
   def coloredProps[S](topology: ColoredPetriNet, settings: Settings): Props =
     Props(new PetriNetInstance[Place, Transition, S](
       topology,
       settings,
-      coloredJobPicker,
-      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
+      colored.jobPicker,
+      new JobExecutor[S, Place, Transition](topology, colored.taskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
       t ⇒ t.updateState.asInstanceOf[(S ⇒ Any ⇒ S)],
       colored.placeIdentifier,
       colored.transitionIdentifier)
