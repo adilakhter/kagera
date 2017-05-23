@@ -1,28 +1,36 @@
 package io.kagera.akka.actor
 
 import akka.persistence.{PersistentActor, RecoveryCompleted}
-import io.kagera.api.colored.ExecutablePetriNet
+import io.kagera.api._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{EventSourcing, Instance}
 import io.kagera.persistence.{ObjectSerializer, Serialization, messages}
 
-abstract class PetriNetInstanceRecovery[S](val topology: ExecutablePetriNet[S], objectSerializer: ObjectSerializer) extends PersistentActor {
+abstract class PetriNetInstanceRecovery[P[_], T[_,_,_], S](
+     val topology: PetriNet[P[_], T[_,_,_]],
+     objectSerializer: ObjectSerializer,
+     eventSourceFn: T[_,_,_] => (S => Any => S)) extends PersistentActor {
 
   implicit val system = context.system
-  val serializer = new Serialization(objectSerializer)
+  implicit val placeIdentifier: Identifiable[P[_]]
+  implicit val transitionIdentifier: Identifiable[T[_,_,_]]
 
-  def onRecoveryCompleted(state: Instance[S])
+  val eventSource = EventSourcing.apply[P, T, S, Any](eventSourceFn)
 
-  def persistEvent[T, E <: Event](instance: Instance[S], e: E)(fn: E => T): Unit = {
+  val serializer = new Serialization[P, T, S](objectSerializer)
+
+  def onRecoveryCompleted(state: Instance[P, T, S])
+
+  def persistEvent[O, E <: Event](instance: Instance[P, T, S], e: E)(fn: E => O): Unit = {
     val serializedEvent = serializer.serializeEvent(e)(instance)
     persist(serializedEvent) { persisted => fn(e) }
   }
 
-  private var recoveringState: Instance[S] = Instance.uninitialized[S](topology)
+  private var recoveringState: Instance[P, T, S] = Instance.uninitialized[P, T, S](topology)
 
   private def applyToRecoveringState(e: AnyRef) = {
     val deserializedEvent = serializer.deserializeEvent(e)(recoveringState)
-    recoveringState = EventSourcing.apply(recoveringState)(deserializedEvent)
+    recoveringState = eventSource(recoveringState)(deserializedEvent)
   }
 
   override def receiveRecover: Receive = {

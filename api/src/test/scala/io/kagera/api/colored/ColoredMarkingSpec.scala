@@ -1,5 +1,6 @@
 package io.kagera.api.colored
 
+import io.kagera.api.Marking
 import org.scalatest.Matchers._
 import org.scalatest.WordSpec
 
@@ -34,7 +35,7 @@ class ColoredMarkingSpec extends WordSpec {
 
     "have correct consume semantics" in {
 
-      val m1: Marking = Marking(p1(1, 2, 3), p2("foo", "bar"), p4(Person("Joe", 42)))
+      val m1: Marking[Place] = Marking(p1(1, 2, 3), p2("foo", "bar"), p4(Person("Joe", 42)))
 
       m1 |-| Marking.empty shouldBe m1
 

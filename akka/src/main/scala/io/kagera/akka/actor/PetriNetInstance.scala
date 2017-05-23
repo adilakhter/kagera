@@ -9,11 +9,9 @@ import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored._
-import io.kagera.execution._
 import io.kagera.execution.EventSourcing._
-import io.kagera.execution.StateFunctions._
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
+import io.kagera.execution._
 import io.kagera.persistence.ObjectSerializer
 
 import scala.collection.JavaConverters._
@@ -36,19 +34,19 @@ object PetriNetInstance {
     if (persistenceId startsWith persistencePrefix) Option(persistenceId.split(persistencePrefix)(1))
     else None
   }
-
-  def props[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
-    Props(new PetriNetInstance[S](topology, settings,
-      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy, transitionIdentifier)))
 }
 
 /**
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
-class PetriNetInstance[S](
-    topology: ExecutablePetriNet[S],
+class PetriNetInstance[P[_], T[_, _, _], S](
+    topology: PetriNet[P[_], T[_, _, _]],
     settings: Settings,
-    executor: JobExecutor[S, Place, Transition]) extends PetriNetInstanceRecovery[S](topology, settings.serializer) {
+    jobPicker: JobPicker[P, T],
+    jobExecutor: JobExecutor[S, P, T],
+    eventSourceFn: T[_, _, _] ⇒ (S ⇒ Any ⇒ S),
+    override implicit val placeIdentifier: Identifiable[P[_]],
+    override implicit val transitionIdentifier: Identifiable[T[_, _, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, eventSourceFn) {
 
   import PetriNetInstance._
 
@@ -72,15 +70,18 @@ class PetriNetInstance[S](
   }
 
   def uninitialized: Receive = {
-    case msg @ Initialize(marking, state) ⇒
-      val uninitialized = Instance.uninitialized[S](topology)
-      val event = InitializedEvent(marking, state)
+    case msg @ Initialize(markingData, state) ⇒
+
+      val initialMarking = Marking.unmarshal[P](markingData, topology.places.getById)
+      val uninitialized = Instance.uninitialized[P, T, S](topology)
+      val event = InitializedEvent(initialMarking, state)
+
       persistEvent(uninitialized, event) {
-        EventSourcing.apply(uninitialized)
+        eventSource.apply(uninitialized)
           .andThen(step)
           .andThen { updatedInstance ⇒
             context become running(updatedInstance._1, Map.empty)
-            sender() ! Initialized(marking, state)
+            sender() ! Initialized(Marking.marshal(initialMarking), state)
           }
       }
     case msg: Command ⇒
@@ -91,7 +92,8 @@ class PetriNetInstance[S](
       context.stop(context.self)
   }
 
-  def running(instance: Instance[S], scheduledRetries: Map[Long, Cancellable]): Receive = {
+  def running(instance: Instance[P, T, S],
+    scheduledRetries: Map[Long, Cancellable]): Receive = {
 
     case SupervisorStrategy.Stop ⇒
       scheduledRetries.values.foreach(_.cancel())
@@ -105,15 +107,15 @@ class PetriNetInstance[S](
     case GetState ⇒
       sender() ! fromExecutionInstance(instance)
 
-    case event @ TransitionFiredEvent(jobId, transitionId, timeStarted, timeCompleted, consumed, produced, output) ⇒
+    case event @ TransitionFiredEvent(jobId, transition, timeStarted, timeCompleted, consumed, produced, output) ⇒
 
-      val transition = topology.transitions.getById(transitionId)
+      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _, _]]).value
+
       val mdc = Map(
         "kageraEvent" -> "TransitionFired",
         "processId" -> processId,
         "jobId" -> jobId,
-        "transitionId" -> transition.id,
-        "transitionLabel" -> transition.label,
+        "transitionId" -> transitionId,
         "timeStarted" -> timeStarted,
         "timeCompleted" -> timeCompleted,
         "duration" -> (timeCompleted - timeStarted)
@@ -122,20 +124,19 @@ class PetriNetInstance[S](
       logWithMDC(Logging.DebugLevel, s"Transition '$transition' successfully fired", mdc)
 
       persistEvent(instance, event)(
-        EventSourcing.apply(instance)
+        eventSource.apply(instance)
           .andThen(step)
           .andThen {
             case (updatedInstance, newJobs) ⇒
-              sender() ! TransitionFired(jobId, transitionId, event.consumed, event.produced, fromExecutionInstance(updatedInstance), newJobs.map(_.id))
+              sender() ! TransitionFired(jobId, transitionId, Marking.marshal[P](event.consumed.asInstanceOf[Marking[P]]), Marking.marshal[P](event.produced.asInstanceOf[Marking[P]]), fromExecutionInstance(updatedInstance), newJobs.map(_.id))
               context become running(updatedInstance, scheduledRetries - jobId)
               updatedInstance
           }
-
       )
 
-    case event @ TransitionFailedEvent(jobId, transitionId, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
+    case event @ TransitionFailedEvent(jobId, transition, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
 
-      val transition = topology.transitions.getById(transitionId)
+      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _, _]]).value
 
       val mdc = Map(
         "kageraEvent" -> "TransitionFailed",
@@ -143,8 +144,7 @@ class PetriNetInstance[S](
         "timeStarted" -> timeStarted,
         "timeFailed" -> timeFailed,
         "duration" -> (timeFailed - timeStarted),
-        "transitionId" -> transition.id,
-        "transitionLabel" -> transition.label,
+        "transitionId" -> transitionId,
         "transitionFailureReason" -> reason
       )
 
@@ -155,25 +155,24 @@ class PetriNetInstance[S](
           val mdc = Map(
             "kageraEvent" -> "TransitionRetry",
             "processId" -> processId,
-            "transitionId" -> transition.id,
-            "transitionLabel" -> transition.label)
+            "transitionId" -> transitionId)
 
           logWithMDC(Logging.WarningLevel, s"Scheduling a retry of transition '$transition' in ${Duration(delay, MILLISECONDS).toString()}", mdc)
           val originalSender = sender()
           persistEvent(instance, event)(
-            EventSourcing.apply(instance)
+            eventSource.apply(instance)
               .andThen { updatedInstance ⇒
                 val retry = system.scheduler.scheduleOnce(delay milliseconds) { executeJob(updatedInstance.jobs(jobId), originalSender) }
-                sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
+                sender() ! TransitionFailed(jobId, transitionId, Marking.marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
                 context become running(updatedInstance, scheduledRetries + (jobId -> retry))
               }
           )
 
         case _ ⇒
           persistEvent(instance, event)(
-            EventSourcing.apply(instance)
+            eventSource.apply(instance)
               .andThen { updatedInstance ⇒
-                sender() ! TransitionFailed(jobId, transitionId, consume, input, reason, strategy)
+                sender() ! TransitionFailed(jobId, transitionId, Marking.marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
                 context become running(updatedInstance, scheduledRetries - jobId)
               })
       }
@@ -182,7 +181,7 @@ class PetriNetInstance[S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      createJob[S](transitionId, input).run(instance).value match {
+      jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any, S]], input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
@@ -190,8 +189,7 @@ class PetriNetInstance[S](
           val mdc = Map(
             "kageraEvent" -> "FireTransitionRejected",
             "processId" -> processId,
-            "transitionId" -> transition.id,
-            "transitionLabel" -> transition.label,
+            "transitionId" -> transitionId,
             "rejectReason" -> reason)
 
           logWithMDC(Logging.WarningLevel, s"Not Firing Transition '$transition' because: $reason", mdc)
@@ -202,14 +200,13 @@ class PetriNetInstance[S](
   }
 
   // TODO remove side effecting here
-  def step(instance: Instance[S]): (Instance[S], Set[Job[S, _]]) = {
+  def step(instance: Instance[P, T, S]): (Instance[P, T, S], Set[Job[P, T, S, _]]) = {
 
-    newEnabledJobs.run(instance).value match {
+    jobPicker.enabledJobs.run(instance).value match {
       case (updatedInstance, jobs) ⇒
 
         if (jobs.isEmpty && updatedInstance.activeJobs.isEmpty)
           settings.idleTTL.foreach { ttl ⇒
-
             system.scheduler.scheduleOnce(ttl, context.self, IdleStop(updatedInstance.sequenceNr))
           }
 
@@ -218,23 +215,22 @@ class PetriNetInstance[S](
     }
   }
 
-  def executeJob[E](job: Job[S, E], originalSender: ActorRef) = {
+  def executeJob[E](job: Job[P, T, S, E], originalSender: ActorRef) = {
 
-    val transition = topology.transitions.getById(job.transitionId)
+    val transitionId = transitionIdentifier(job.transition.asInstanceOf[T[_, _, _]]).value
     val mdc = Map(
       "kageraEvent" -> "FiringTransition",
       "processId" -> processId,
       "jobId" -> job.id,
-      "transitionId" -> transition.id,
-      "transitionLabel" -> transition.label,
+      "transitionId" -> transitionId,
       "timeStarted" -> System.currentTimeMillis()
     )
 
-    logWithMDC(Logging.DebugLevel, s"Firing transition ${transition.label}", mdc)
-    executor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    logWithMDC(Logging.DebugLevel, s"Firing transition ${job.transition}", mdc)
+    jobExecutor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
-  def scheduleFailedJobsForRetry(instance: Instance[S]): Map[Long, Cancellable] = {
+  def scheduleFailedJobsForRetry(instance: Instance[P, T, S]): Map[Long, Cancellable] = {
     instance.jobs.values.foldLeft(Map.empty[Long, Cancellable]) {
       case (map, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
         val newDelay = failureTime + delay - System.currentTimeMillis()
@@ -251,7 +247,7 @@ class PetriNetInstance[S](
     }
   }
 
-  override def onRecoveryCompleted(instance: Instance[S]) = {
+  override def onRecoveryCompleted(instance: Instance[P, T, S]) = {
     val scheduledRetries = scheduleFailedJobsForRetry(instance)
 
     val updatedInstance = step(instance)._1

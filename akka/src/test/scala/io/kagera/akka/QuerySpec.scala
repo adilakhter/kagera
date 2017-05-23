@@ -10,8 +10,9 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import io.kagera.akka.actor.PetriNetInstanceProtocol.{ Initialize, Initialized, TransitionFired }
 import io.kagera.akka.query.PetriNetQuery
+import io.kagera.api.Marking
 import io.kagera.api.colored.dsl._
-import io.kagera.api.colored.{ Marking, Place }
+import io.kagera.api.colored._
 import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._
@@ -53,8 +54,8 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val processId = UUID.randomUUID().toString
       val instance = createPetriNetActor(petriNet, processId)
 
-      instance ! Initialize(Marking(p1 -> 1))
-      expectMsg(Initialized(Marking(p1 -> 1), ()))
+      instance ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
+      expectMsg(Initialized(Marking.marshal[Place](Marking(p1 -> 1)), ()))
       expectMsgPF(timeOut) { case TransitionFired(_, 1, _, _, _, _) ⇒ }
       expectMsgPF(timeOut) { case TransitionFired(_, 2, _, _, _, _) ⇒ }
 
@@ -64,13 +65,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
         .request(3)
         .expectNext(InitializedEvent(marking = Marking(p1 -> 1), state = ()))
         .expectNextChainingPF {
-          case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
-            transitionId shouldBe t1.id
+          case TransitionFiredEvent(_, transition, _, _, consumed, produced, _) ⇒
+            transition shouldBe t1
             consumed shouldBe Marking(p1 -> 1)
             produced shouldBe Marking(p2 -> 1)
         }.expectNextChainingPF {
-          case TransitionFiredEvent(_, transitionId, _, _, consumed, produced, _) ⇒
-            transitionId shouldBe t2.id
+          case TransitionFiredEvent(_, transition, _, _, consumed, produced, _) ⇒
+            transition shouldBe t2
             consumed shouldBe Marking(p2 -> 1)
             produced shouldBe Marking(p3 -> 1)
         }
@@ -101,9 +102,9 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val processId3 = UUID.randomUUID().toString
       val instance3 = createPetriNetActor(petriNet, processId3)
 
-      instance1 ! Initialize(Marking(p1 -> 1))
-      instance2 ! Initialize(Marking(p1 -> 1))
-      instance3 ! Initialize(Marking(p1 -> 1))
+      instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
+      instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
+      instance3 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
 
       // Setup is finished here, now continue with assertions
 
@@ -138,9 +139,9 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val processId3 = UUID.randomUUID().toString
       val instance3 = createPetriNetActor(petriNet, processId3)
 
-      instance1 ! Initialize(Marking(p1 -> 1))
-      instance2 ! Initialize(Marking(p1 -> 1))
-      instance3 ! Initialize(Marking(p1 -> 1))
+      instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
+      instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
+      instance3 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
 
       // Setup is finished here, now continue with assertions
 

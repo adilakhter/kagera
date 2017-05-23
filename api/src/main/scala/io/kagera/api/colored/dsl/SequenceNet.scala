@@ -1,6 +1,7 @@
 package io.kagera.api.colored.dsl
 
 import fs2.Task
+import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.api.colored._
 import io.kagera.api.colored.transitions.{ AbstractTransition, UncoloredTransition }
@@ -10,7 +11,7 @@ case class TransitionBehaviour[S, E](automated: Boolean, exceptionHandler: Trans
   def asTransition(id: Long, eventSource: S ⇒ E ⇒ S) = new AbstractTransition[Unit, E, S](id, s"t$id", automated, exceptionHandler) with UncoloredTransition[Unit, E, S] {
     override val toString = label
     override val updateState = eventSource
-    override def produceEvent(consume: Marking, state: S, input: Unit): Task[E] = Task.delay { (fn(state)) }
+    override def produceEvent(consume: Marking[Place], state: S, input: Unit): Task[E] = Task.delay { (fn(state)) }
   }
 }
 

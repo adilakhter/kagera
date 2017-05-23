@@ -1,5 +1,6 @@
 package io.kagera.api.colored
 
+import io.kagera.api.MarkedPlace
 import io.kagera.api.multiset._
 
 object Place {
@@ -28,5 +29,5 @@ trait Place[Color] {
    */
   def label: String
 
-  def apply[T <: Color](_tokens: T*): MarkedPlace[Color] = (this, MultiSet(_tokens: _*))
+  def apply[T <: Color](_tokens: T*): MarkedPlace[Place, Color] = (this, MultiSet(_tokens: _*))
 }

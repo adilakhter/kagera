@@ -10,7 +10,9 @@ import fs2.Strategy
 import io.kagera.akka.AkkaTestBase.MockShardActor
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.akka.actor.PetriNetInstance.Settings
-import io.kagera.api.colored.ExecutablePetriNet
+import io.kagera.api.colored
+import io.kagera.api.colored.{ ColoredTokenGame, ColoredTransitionTaskProvider, ExecutablePetriNet, Place, Transition }
+import io.kagera.execution.{ Instance, JobExecutor, JobPicker }
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
@@ -56,6 +58,22 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
+  private val coloredJobPicker = new JobPicker[Place, Transition](new ColoredTokenGame()) {
+    override def isFireable[S](instance: Instance[Place, Transition, S], t: Transition[_, _, _]): Boolean =
+      t.isAutomated && !instance.isBlockedReason(t).isDefined
+  }
+
+  def coloredProps[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
+    Props(new PetriNetInstance[Place, Transition, S](
+      topology,
+      settings,
+      coloredJobPicker,
+      new JobExecutor[S, Place, Transition](topology, new ColoredTransitionTaskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
+      t ⇒ t.updateState.asInstanceOf[(S ⇒ Any ⇒ S)],
+      colored.placeIdentifier,
+      colored.transitionIdentifier)
+    )
+
   override def afterAll() = {
     super.afterAll()
     shutdown(system)
@@ -86,6 +104,6 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
   }
 
   def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
-    createPetriNetActor(PetriNetInstance.props(petriNet, instanceSettings), processId)
+    createPetriNetActor(coloredProps(petriNet, instanceSettings), processId)
   }
 }

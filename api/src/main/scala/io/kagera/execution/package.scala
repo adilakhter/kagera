@@ -1,7 +1,7 @@
 package io.kagera
 
 import fs2.Task
-import io.kagera.api.colored._
+import io.kagera.api.Marking
 
 package object execution {
 
@@ -17,5 +17,14 @@ package object execution {
    * @tparam Output The output emitted by the transition.
    * @tparam State  The state the transition closes over.
    */
-  type TransitionTask[Input, Output, State] = (Marking, State, Input) ⇒ Task[(Marking, Output)]
+  type TransitionTask[P[_], Input, Output, State] = (Marking[P], State, Input) ⇒ Task[(Marking[P], Output)]
+
+  /**
+   * An event sourcing function associated with a transition
+   *
+   * @tparam T The transition type
+   * @tparam S The state type
+   * @tparam E The event type
+   */
+  type EventSource[S, E] = S ⇒ E ⇒ S
 }

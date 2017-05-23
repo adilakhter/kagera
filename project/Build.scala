@@ -13,6 +13,7 @@ object Build extends Build {
     "-encoding", "utf8",
     "-target:jvm-1.8",
     "-feature",
+    "-language:existentials",
     "-language:implicitConversions",
     "-language:postfixOps",
     "-language:higherKinds",

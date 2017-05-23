@@ -1,16 +1,16 @@
 package io.kagera.execution
 
-import ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored.{ Marking, Transition, _ }
+import io.kagera.api.Marking
+import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 
 /**
- * A Job describes all the parameters that make a firing transition in a petri net.
+ * A Job encapsulates all the parameters that make a firing transition in a petri net.
  */
-case class Job[S, E](
+case class Job[P[_], T[_, _, _], S, E](
     id: Long,
     processState: S,
-    transitionId: Long,
-    consume: Marking,
+    transition: T[_, E, S],
+    consume: Marking[P],
     input: Any,
     failure: Option[ExceptionState] = None) {
 
