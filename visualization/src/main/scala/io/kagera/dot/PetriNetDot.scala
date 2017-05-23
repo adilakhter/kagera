@@ -1,6 +1,6 @@
 package io.kagera.dot
 
-import io.kagera.api.multiset.MultiSet
+import io.kagera.api.MultiSet
 
 import scalax.collection.Graph
 import scalax.collection.edge.WLDiEdge

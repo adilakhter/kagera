@@ -1,7 +1,6 @@
 package io.kagera.api.colored
 
-import io.kagera.api.MarkedPlace
-import io.kagera.api.multiset._
+import io.kagera.api.{MarkedPlace, MultiSet}
 
 object Place {
   def apply[C](id: Long, label: Option[String] = None): Place[C] = {

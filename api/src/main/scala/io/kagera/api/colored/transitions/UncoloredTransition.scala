@@ -3,9 +3,6 @@ package io.kagera.api.colored.transitions
 import fs2.Task
 import io.kagera.api._
 import io.kagera.api.colored._
-import io.kagera.api.multiset.{ MultiSet, _ }
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 trait UncoloredTransition[Input, Output, State] extends Transition[Input, Output, State] {
 

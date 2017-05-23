@@ -1,6 +1,5 @@
 package io.kagera.api
 
-import multiset._
 import scalax.collection.edge.WLDiEdge
 
 /**

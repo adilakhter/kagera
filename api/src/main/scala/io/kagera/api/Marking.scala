@@ -1,7 +1,5 @@
 package io.kagera.api
 
-import io.kagera.api.multiset._
-
 object Marking {
 
   def empty[P[_]]: Marking[P] = HMap[P, MultiSet](Map.empty)

@@ -5,7 +5,7 @@ import akka.cluster.sharding.ShardRegion.Passivate
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.pattern.pipe
-import fs2.Strategy
+import fs2.{ Strategy, Task }
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._

@@ -1,7 +1,6 @@
 package io.kagera.api.colored
 
 import io.kagera.api._
-import io.kagera.api.multiset._
 
 class ColoredTokenGame extends TokenGame[Place[_], Transition[_, _, _], Marking[Place]] {
 

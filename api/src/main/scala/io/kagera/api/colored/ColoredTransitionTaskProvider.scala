@@ -1,6 +1,6 @@
 package io.kagera.api.colored
 
-import io.kagera.api.multiset.MultiSet
+import io.kagera.api.MultiSet
 import io.kagera.execution.{ TransitionTask, TransitionTaskProvider }
 
 class ColoredTransitionTaskProvider[S] extends TransitionTaskProvider[S, Place, Transition] {

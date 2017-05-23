@@ -1,19 +1,8 @@
 package io.kagera.api
 
-package object multiset {
+trait MultiSetOps {
 
-  type MultiSet[T] = Map[T, Int]
-
-  object MultiSet {
-
-    def empty[T]: MultiSet[T] = Map.empty[T, Int]
-
-    def from[T](elements: Iterable[T]) = elements.foldLeft(empty[T]) { case (mset, e) ⇒ mset.multisetIncrement(e, 1) }
-
-    def apply[T](elements: T*) = from(elements.toSeq)
-  }
-
-  implicit class MultiSetOps[T](mset: MultiSet[T]) {
+  implicit class MultiSetFunctions[T](mset: MultiSet[T]) {
     def multisetDifference(other: MultiSet[T]): MultiSet[T] =
       other.foldLeft(mset) {
         case (result, (p, count)) ⇒ result.get(p) match {

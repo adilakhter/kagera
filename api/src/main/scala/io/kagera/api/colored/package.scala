@@ -1,6 +1,5 @@
 package io.kagera.api
 
-import io.kagera.api.multiset._
 import scalax.collection.edge.WLDiEdge
 
 package object colored {

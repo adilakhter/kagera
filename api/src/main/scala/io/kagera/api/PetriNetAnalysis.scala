@@ -1,7 +1,5 @@
 package io.kagera.api
 
-import io.kagera.api.multiset._
-
 object PetriNetAnalysis {
 
   def reachabilityGraph[P, T](pn: PetriNet[P, T])(m0: MultiSet[P]) = {
@@ -16,6 +14,9 @@ object PetriNetAnalysis {
       t -> mt
     }
   }
+
+  private def markingAfterT[P, T](pn: PetriNet[P, T])(m0: MultiSet[P], t: T): MultiSet[P] =
+    m0
 
   /**
    * Given a petri net and a marking, finds the enabled transitions in that marking.

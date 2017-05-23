@@ -1,6 +1,6 @@
 package io.kagera.execution
 
-import io.kagera.api.multiset._
+import io.kagera.api.MultiSet
 
 /**
  * Provides a task for a transition.

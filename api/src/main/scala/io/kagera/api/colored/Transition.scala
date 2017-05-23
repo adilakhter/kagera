@@ -1,7 +1,7 @@
 package io.kagera.api.colored
 
+import io.kagera.api.MultiSet
 import io.kagera.execution.ExceptionStrategy.BlockTransition
-import io.kagera.api.multiset.MultiSet
 import io.kagera.execution.{ TransitionExceptionHandler, TransitionTask }
 
 /**
