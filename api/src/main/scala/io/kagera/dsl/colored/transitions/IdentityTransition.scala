@@ -1,6 +1,6 @@
-package io.kagera.api.colored.transitions
+package io.kagera.dsl.colored.transitions
 
-import io.kagera.api.colored.Transition
+import io.kagera.dsl.colored.Transition
 
 trait IdentityTransition[Input, Output, State] extends Transition[Input, Output, State] {
 

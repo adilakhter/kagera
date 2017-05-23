@@ -1,9 +1,9 @@
-package io.kagera.api.colored
+package io.kagera.dsl.colored
 
 import io.kagera.api.Marking
 import org.scalatest.WordSpec
 import org.scalatest.Matchers._
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 
 class TokenGameSpec extends WordSpec {
 

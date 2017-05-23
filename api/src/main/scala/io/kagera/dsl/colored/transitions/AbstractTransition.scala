@@ -1,6 +1,6 @@
-package io.kagera.api.colored.transitions
+package io.kagera.dsl.colored.transitions
 
-import io.kagera.api.colored.Transition
+import io.kagera.dsl.colored.Transition
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.execution.TransitionExceptionHandler
 

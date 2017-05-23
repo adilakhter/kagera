@@ -1,4 +1,4 @@
-package io.kagera.api.colored
+package io.kagera.dsl.colored
 
 /**
  * An edge from a place to a transition.

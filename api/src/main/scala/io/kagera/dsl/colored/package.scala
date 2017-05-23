@@ -1,7 +1,8 @@
-package io.kagera.api
+package io.kagera.dsl
 
 import fs2.Task
-import io.kagera.api.colored.transitions.{ AbstractTransition, IdentityTransition }
+import io.kagera.api._
+import io.kagera.dsl.colored.transitions.{ AbstractTransition, IdentityTransition }
 import io.kagera.execution._
 
 import scalax.collection.edge.WLDiEdge

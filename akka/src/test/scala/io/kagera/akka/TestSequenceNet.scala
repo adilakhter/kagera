@@ -1,6 +1,6 @@
 package io.kagera.akka
 
-import io.kagera.api.colored.SequenceNet
+import io.kagera.dsl.colored.SequenceNet
 
 sealed trait Event
 case class Added(n: Int) extends Event

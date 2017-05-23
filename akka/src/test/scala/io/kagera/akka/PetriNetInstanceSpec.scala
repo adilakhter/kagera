@@ -9,7 +9,7 @@ import io.kagera.akka.AkkaTestBase.GetChild
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
 import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 import io.kagera.execution.TransitionExceptionHandler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar

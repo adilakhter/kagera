@@ -1,8 +1,8 @@
-package io.kagera.api.colored.transitions
+package io.kagera.dsl.colored.transitions
 
 import fs2.Task
 import io.kagera.api._
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 
 trait UncoloredTransition[Input, Output, State] extends Transition[Input, Output, State] {
 

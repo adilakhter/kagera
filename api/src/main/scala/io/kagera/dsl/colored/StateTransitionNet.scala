@@ -1,8 +1,8 @@
-package io.kagera.api.colored
+package io.kagera.dsl.colored
 
 import fs2.Task
 import io.kagera.api.Marking
-import io.kagera.api.colored.transitions.{ AbstractTransition, UncoloredTransition }
+import io.kagera.dsl.colored.transitions.{ AbstractTransition, UncoloredTransition }
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 import io.kagera.execution.TransitionExceptionHandler
 

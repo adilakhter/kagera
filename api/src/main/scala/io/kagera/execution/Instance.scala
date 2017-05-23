@@ -1,7 +1,7 @@
 package io.kagera.execution
 
 import io.kagera.api._
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 
 import scala.util.Random
 

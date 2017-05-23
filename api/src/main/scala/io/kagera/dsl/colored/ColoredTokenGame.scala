@@ -1,4 +1,4 @@
-package io.kagera.api.colored
+package io.kagera.dsl.colored
 
 import io.kagera.api._
 

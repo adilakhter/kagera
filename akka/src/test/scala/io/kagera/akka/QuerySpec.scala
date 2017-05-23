@@ -10,8 +10,8 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import io.kagera.akka.actor.PetriNetInstanceProtocol.{ Initialize, Initialized, TransitionFired }
 import io.kagera.akka.query.PetriNetQuery
-import io.kagera.api.Marking
-import io.kagera.api.colored._
+import io.kagera.api._
+import io.kagera.dsl.colored._
 import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._

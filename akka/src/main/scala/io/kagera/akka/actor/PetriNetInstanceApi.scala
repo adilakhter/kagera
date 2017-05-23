@@ -9,7 +9,7 @@ import akka.pattern._
 
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ Await, Future }
