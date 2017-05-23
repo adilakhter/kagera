@@ -8,10 +8,10 @@ import akka.testkit.{ ImplicitSender, TestKit }
 import com.typesafe.config.ConfigFactory
 import fs2.Strategy
 import io.kagera.akka.AkkaTestBase.MockShardActor
-import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.akka.actor.PetriNetInstance.Settings
+import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.api.colored
-import io.kagera.api.colored.{ ColoredTokenGame, ColoredTransitionTaskProvider, ExecutablePetriNet, Place, Transition }
+import io.kagera.api.colored.{ ColoredPetriNet, ColoredTokenGame, ColoredTransitionTaskProvider, Place, Transition }
 import io.kagera.execution.{ Instance, JobExecutor, JobPicker }
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
@@ -63,7 +63,7 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
       t.isAutomated && !instance.isBlockedReason(t).isDefined
   }
 
-  def coloredProps[S](topology: ExecutablePetriNet[S], settings: Settings): Props =
+  def coloredProps[S](topology: ColoredPetriNet, settings: Settings): Props =
     Props(new PetriNetInstance[Place, Transition, S](
       topology,
       settings,
@@ -103,7 +103,7 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     system.actorOf(mockShardActorProps)
   }
 
-  def createPetriNetActor[S](petriNet: ExecutablePetriNet[S], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+  def createPetriNetActor[S](petriNet: ColoredPetriNet, processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
     createPetriNetActor(coloredProps(petriNet, instanceSettings), processId)
   }
 }

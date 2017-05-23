@@ -64,7 +64,7 @@ class QueuePushingActor(queue: SourceQueueWithComplete[TransitionResponse], wait
 /**
  * Contains some methods to interact with a petri net instance actor.
  */
-class PetriNetInstanceApi[S](topology: ExecutablePetriNet[S], actor: ActorRef)(implicit actorSystem: ActorSystem, materializer: Materializer) {
+class PetriNetInstanceApi[S](topology: ColoredPetriNet, actor: ActorRef)(implicit actorSystem: ActorSystem, materializer: Materializer) {
 
   /**
    * Fires a transition and confirms (waits) for the result of that transition firing.
