@@ -15,7 +15,7 @@ class JobExecutor[State, P[_], T[_, _, _]](
     exceptionHandlerFn: T[_, _, _] ⇒ TransitionExceptionHandler)(implicit strategy: Strategy) {
 
   val cachedTransitionTasks: Map[T[_, _, _], _] =
-    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology.inMarking(t), topology.outMarking(t), t.asInstanceOf[T[Any, Any, State]])).toMap
+    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology, t.asInstanceOf[T[Any, Any, State]])).toMap
 
   def transitionFunction[Input, Output](t: T[Input, Output, State]) =
     cachedTransitionTasks(t).asInstanceOf[TransitionTask[P, Input, Output, State]]

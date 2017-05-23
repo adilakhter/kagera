@@ -1,6 +1,6 @@
 package io.kagera.execution
 
-import io.kagera.api.MultiSet
+import io.kagera.api.PetriNet
 
 /**
  * Provides a task for a transition.
@@ -19,5 +19,5 @@ trait TransitionTaskProvider[State, P[_], T[_, _, _]] {
    * @param t       The transition.
    * @return
    */
-  def apply[Input, Output](inAdjacent: MultiSet[P[_]], outAdjacent: MultiSet[P[_]], t: T[Input, Output, State]): TransitionTask[P, Input, Output, State]
+  def apply[Input, Output](petriNet: PetriNet[P[_], T[_, _, _]], t: T[Input, Output, State]): TransitionTask[P, Input, Output, State]
 }
