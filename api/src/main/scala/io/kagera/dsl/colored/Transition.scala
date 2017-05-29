@@ -61,14 +61,6 @@ trait Transition[Input, Output, State] {
    * Mo is the out-adjacent marking, the tokens this transition produces.
    * O is the emitted output
    *
-   * TODO instead of requiring this on a Transition trait a Type-Class approach looks more flexible.
-   *
-   * For example some type T[_, _, _] we have T => TransitionFunction
-   * The same goes for other properties defined on this trait.
-   *
-   * This way we can forgo with the entire Transition trait and let user's use whatever they want.
-   * For example, in simple cases (uncolored place / transition nets) an identifier (Int or Long) as a type is enough.
-   *
    * @param inAdjacent
    * @param outAdjacent
    * @return

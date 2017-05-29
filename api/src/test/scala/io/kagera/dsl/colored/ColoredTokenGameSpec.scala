@@ -1,11 +1,11 @@
 package io.kagera.dsl.colored
 
-import io.kagera.api.Marking
+import io.kagera.api.{ Marking, ReferenceTokenGame }
 import org.scalatest.WordSpec
 import org.scalatest.Matchers._
 import io.kagera.dsl.colored._
 
-class TokenGameSpec extends WordSpec {
+class ColoredTokenGameSpec extends WordSpec {
 
   val p1 = Place[Int](id = 1)
   val p2 = Place[Int](id = 2)
