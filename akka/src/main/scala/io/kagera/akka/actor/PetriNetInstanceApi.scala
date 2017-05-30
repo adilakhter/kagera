@@ -6,8 +6,8 @@ import akka.stream.scaladsl.{ Sink, Source, SourceQueueWithComplete }
 import akka.stream.{ Materializer, OverflowStrategy }
 import akka.util.Timeout
 import akka.pattern._
-
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
+import io.kagera.api.PetriNet
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.dsl.colored._
 
@@ -64,7 +64,7 @@ class QueuePushingActor(queue: SourceQueueWithComplete[TransitionResponse], wait
 /**
  * Contains some methods to interact with a petri net instance actor.
  */
-class PetriNetInstanceApi[S](topology: ColoredPetriNet, actor: ActorRef)(implicit actorSystem: ActorSystem, materializer: Materializer) {
+class PetriNetInstanceApi[P[_], T[_, _, _], S](topology: PetriNet[P[_], T[_, _, _]], actor: ActorRef)(implicit actorSystem: ActorSystem, materializer: Materializer) {
 
   /**
    * Fires a transition and confirms (waits) for the result of that transition firing.
