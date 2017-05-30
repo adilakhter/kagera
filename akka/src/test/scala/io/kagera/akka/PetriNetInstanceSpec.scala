@@ -43,7 +43,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val initialState = Set(1, 2, 3)
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), initialState)
       expectMsg(Initialized(Marking.marshal[Place](initialMarking), initialState))
@@ -56,7 +56,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition()(_ ⇒ Added(2))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       watch(actor)
       actor ! GetState
@@ -70,7 +70,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition()(_ ⇒ Added(2))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
       val initialState = Set(1, 2, 3)
       val initialMarkingData = Marking.marshal[Place](initialMarking)
 
@@ -88,7 +88,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition()(_ ⇒ throw new RuntimeException("t2 failed!"))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -105,7 +105,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition()(_ ⇒ Added(2))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -127,7 +127,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition()(_ ⇒ Added(2))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -153,7 +153,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val id = UUID.randomUUID()
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -181,7 +181,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actorName = UUID.randomUUID().toString
 
-      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, actorName)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -204,7 +204,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       syncKillActorWithPoisonPill(actor)
 
       // create a new actor with the same persistent identifier
-      val newActor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val newActor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, actorName)
 
       newActor ! GetState
 
@@ -226,7 +226,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       when(mockFunction.apply(any[Set[Int]])).thenThrow(new RuntimeException("t2 failed"))
 
       val actorName = UUID.randomUUID().toString
-      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, actorName)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -251,7 +251,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       })
 
       // create a new actor with the same persistent identifier
-      val newActor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val newActor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, actorName)
       Thread.sleep(500)
 
       verify(mockFunction).apply(any[Set[Int]])
@@ -270,7 +270,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val processId = UUID.randomUUID().toString
 
-      val actor = createPetriNetActor[Set[Int]](petriNet, processId)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, processId)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -287,7 +287,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       reset(mockT2)
 
       // create a new actor with the same persistent identifier
-      val newActor = createPetriNetActor[Set[Int]](petriNet, processId)
+      val newActor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, processId)
 
       newActor ! GetState
 
@@ -320,7 +320,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actorName = UUID.randomUUID().toString
 
-      val actor = createPetriNetActor[Set[Int]](petriNet, actorName)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn, actorName)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -353,7 +353,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition(automated = false)(_ ⇒ Added(2))
       )
 
-      val petriNetActor = createPetriNetActor(coloredProps(petriNet, customSettings), UUID.randomUUID().toString)
+      val petriNetActor = createPetriNetActor[Set[Int]](coloredProps(petriNet, taskProvider, eventSourceFn.asInstanceOf[Set[Int] ⇒ Any ⇒ Set[Int]], customSettings), UUID.randomUUID().toString)
 
       implicit val timeout = Timeout(2 seconds)
       whenReady((petriNetActor ? GetChild).mapTo[ActorRef]) {
@@ -370,14 +370,14 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
     "fire automated transitions in parallel when possible" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourcing: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)
 
       val t1 = nullTransition[Unit](id = 1, automated = false)
-      val t2 = transition(id = 2, automated = true)(_ ⇒ Thread.sleep(500))
-      val t3 = transition(id = 3, automated = true)(_ ⇒ Thread.sleep(500))
+      val t2 = stateTransition(id = 2, automated = true)(_ ⇒ Thread.sleep(500))
+      val t3 = stateTransition(id = 3, automated = true)(_ ⇒ Thread.sleep(500))
 
       val petriNet = createPetriNet[Unit](
         t1 ~> p1,
@@ -389,7 +389,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       // creates a petri net actor with initial marking: p1 -> 1
       val initialMarking = Marking.empty[Place]
 
-      val actor = createPetriNetActor(petriNet)
+      val actor = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal[Place](initialMarking), ())
       expectMsgClass(classOf[Initialized])

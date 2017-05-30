@@ -9,18 +9,18 @@ import io.kagera.execution.EventSourcing._
 /**
  * Class responsible for 'executing' a transition 'Job'
  */
-class JobExecutor[State, P[_], T[_, _, _]](
-    topology: PetriNet[P[_], T[_, _, _]],
-    taskProvider: TransitionTaskProvider[State, P, T],
-    exceptionHandlerFn: T[_, _, _] ⇒ TransitionExceptionHandler)(implicit strategy: Strategy) {
+class JobExecutor[S, P[_], T[_, _]](
+    topology: PetriNet[P[_], T[_, _]],
+    taskProvider: TransitionTaskProvider[S, P, T],
+    exceptionHandlerFn: T[_, _] ⇒ TransitionExceptionHandler)(implicit strategy: Strategy) {
 
-  val cachedTransitionTasks: Map[T[_, _, _], _] =
-    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology, t.asInstanceOf[T[Any, Any, State]])).toMap
+  val cachedTransitionTasks: Map[T[_, _], _] =
+    topology.transitions.map(t ⇒ t -> taskProvider.apply[Any, Any](topology, t.asInstanceOf[T[Any, Any]])).toMap
 
-  def transitionFunction[Input, Output](t: T[Input, Output, State]) =
-    cachedTransitionTasks(t).asInstanceOf[TransitionTask[P, Input, Output, State]]
+  def transitionFunction[Input, Output](t: T[Input, Output]) =
+    cachedTransitionTasks(t).asInstanceOf[TransitionTask[P, Input, Output, S]]
 
-  def executeTransitionAsync[Input, Output](t: T[Input, Output, State]): TransitionTask[P, Input, Output, State] = {
+  def executeTransitionAsync[Input, Output](t: T[Input, Output]): TransitionTask[P, Input, Output, S] = {
     (consume, state, input) ⇒
 
       val handleFailure: PartialFunction[Throwable, Task[(Marking[P], Output)]] = {
@@ -39,10 +39,10 @@ class JobExecutor[State, P[_], T[_, _, _]](
   /**
    * Executes a job returning a Task[TransitionEvent]
    */
-  def apply[E](job: Job[P, T, State, E]): Task[TransitionEvent[T]] = {
+  def apply[E](job: Job[P, T, S, E]): Task[TransitionEvent[T]] = {
 
     val startTime = System.currentTimeMillis()
-    val transition = job.transition.asInstanceOf[T[Any, Any, State]]
+    val transition = job.transition.asInstanceOf[T[Any, Any]]
 
     executeTransitionAsync(transition)(job.consume, job.processState, job.input).map {
       case (produced, out) ⇒

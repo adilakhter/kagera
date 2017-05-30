@@ -12,7 +12,7 @@ import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.dsl.colored
 import io.kagera.dsl.colored.{ ColoredPetriNet, Place, Transition }
-import io.kagera.execution.JobExecutor
+import io.kagera.execution.{ JobExecutor, TransitionTaskProvider }
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
@@ -58,13 +58,17 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def coloredProps[S](topology: ColoredPetriNet, settings: Settings): Props =
+  def coloredProps[S](topology: ColoredPetriNet,
+    taskProvider: TransitionTaskProvider[S, Place, Transition],
+    eventSourceFn: S ⇒ Any ⇒ S,
+    settings: Settings): Props =
+
     Props(new PetriNetInstance[Place, Transition, S](
       topology,
       settings,
       colored.jobPicker,
-      new JobExecutor[S, Place, Transition](topology, colored.taskProvider[S], t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
-      t ⇒ t.updateState.asInstanceOf[(S ⇒ Any ⇒ S)],
+      new JobExecutor[S, Place, Transition](topology, taskProvider, t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
+      t ⇒ eventSourceFn,
       colored.placeIdentifier,
       colored.transitionIdentifier)
     )
@@ -98,7 +102,8 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     system.actorOf(mockShardActorProps)
   }
 
-  def createPetriNetActor[S](petriNet: ColoredPetriNet, processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
-    createPetriNetActor(coloredProps(petriNet, instanceSettings), processId)
+  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, taskProvider: TransitionTaskProvider[S, Place, Transition],
+    eventSourceFn: S ⇒ E ⇒ S, processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+    createPetriNetActor(coloredProps(petriNet, taskProvider, eventSourceFn.asInstanceOf[S ⇒ Any ⇒ S], instanceSettings), processId)
   }
 }

@@ -9,7 +9,7 @@ import io.kagera.api.PetriNet
  * @tparam P The place type of the net.
  * @tparam T The transition type of the net.
  */
-trait TransitionTaskProvider[State, P[_], T[_, _, _]] {
+trait TransitionTaskProvider[State, P[_], T[_, _]] {
 
   /**
    * Given a transition returns an TransitionTask
@@ -19,5 +19,5 @@ trait TransitionTaskProvider[State, P[_], T[_, _, _]] {
    * @param t       The transition.
    * @return
    */
-  def apply[Input, Output](petriNet: PetriNet[P[_], T[_, _, _]], t: T[Input, Output, State]): TransitionTask[P, Input, Output, State]
+  def apply[Input, Output](petriNet: PetriNet[P[_], T[_, _]], t: T[Input, Output]): TransitionTask[P, Input, Output, State]
 }

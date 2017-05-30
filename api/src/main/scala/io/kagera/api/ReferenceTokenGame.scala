@@ -1,11 +1,11 @@
 package io.kagera.api
 
-trait ReferenceTokenGame[P[_], T[_, _, _]] extends TokenGame[P[_], T[_, _, _], Marking[P]] {
+trait ReferenceTokenGame[P[_], T[_, _]] extends TokenGame[P[_], T[_, _], Marking[P]] {
 
-  override def enabledParameters(petriNet: PetriNet[P[_], T[_, _, _]])(m: Marking[P]): Map[T[_, _, _], Iterable[Marking[P]]] =
+  override def enabledParameters(petriNet: PetriNet[P[_], T[_, _]])(m: Marking[P]): Map[T[_, _], Iterable[Marking[P]]] =
     enabledTransitions(petriNet)(m).view.map(t ⇒ t -> consumableMarkings(petriNet)(m, t)).toMap
 
-  def consumableMarkings(petriNet: PetriNet[P[_], T[_, _, _]])(marking: Marking[P], t: T[_, _, _]): Iterable[Marking[P]] = {
+  def consumableMarkings(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P], t: T[_, _]): Iterable[Marking[P]] = {
     // TODO this is not the most efficient, should break early when consumable tokens < edge weight
     val consumable = petriNet.inMarking(t).map {
       case (place, count) ⇒ (place, count, consumableTokens(petriNet)(marking, place, t))
@@ -24,9 +24,9 @@ trait ReferenceTokenGame[P[_], T[_, _, _]] extends TokenGame[P[_], T[_, _, _], M
     }
   }
 
-  def consumableTokens(petriNet: PetriNet[P[_], T[_, _, _]])(marking: Marking[P], p: P[_], t: T[_, _, _]): MultiSet[_]
+  def consumableTokens(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P], p: P[_], t: T[_, _]): MultiSet[_]
 
   // TODO optimize, no need to process all transitions
-  override def enabledTransitions(petriNet: PetriNet[P[_], T[_, _, _]])(marking: Marking[P]): Set[T[_, _, _]] =
+  override def enabledTransitions(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P]): Set[T[_, _]] =
     petriNet.transitions.filter(t ⇒ consumableMarkings(petriNet)(marking, t).nonEmpty)
 }

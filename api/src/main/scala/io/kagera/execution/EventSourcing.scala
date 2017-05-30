@@ -8,17 +8,17 @@ object EventSourcing {
 
   sealed trait Event
 
-  sealed trait TransitionEvent[T[_, _, _]] extends Event {
+  sealed trait TransitionEvent[T[_, _]] extends Event {
     val jobId: Long
-    val transition: T[_, _, _]
+    val transition: T[_, _]
   }
 
   /**
    * An event describing the fact that a transition has fired in the petri net process.
    */
-  case class TransitionFiredEvent[P[_], T[_, _, _], E](
+  case class TransitionFiredEvent[P[_], T[_, _], E](
     override val jobId: Long,
-    override val transition: T[_, _, _],
+    override val transition: T[_, _],
     timeStarted: Long,
     timeCompleted: Long,
     consumed: Marking[P],
@@ -28,9 +28,9 @@ object EventSourcing {
   /**
    * An event describing the fact that a transition failed to fire.
    */
-  case class TransitionFailedEvent[P[_], T[_, _, _], I](
+  case class TransitionFailedEvent[P[_], T[_, _], I](
     override val jobId: Long,
-    override val transition: T[_, _, _],
+    override val transition: T[_, _],
     timeStarted: Long,
     timeFailed: Long,
     consume: Marking[P],
@@ -45,12 +45,12 @@ object EventSourcing {
     marking: Marking[P],
     state: Any) extends Event
 
-  def apply[P[_], T[_, _, _], S, E](sourceFn: T[_, _, _] ⇒ EventSource[S, E]): Instance[P, T, S] ⇒ Event ⇒ Instance[P, T, S] = instance ⇒ {
+  def apply[P[_], T[_, _], S, E](sourceFn: T[_, _] ⇒ EventSource[S, E]): Instance[P, T, S] ⇒ Event ⇒ Instance[P, T, S] = instance ⇒ {
     case InitializedEvent(initialMarking, initialState) ⇒
       Instance[P, T, S](instance.process, 1, initialMarking.asInstanceOf[Marking[P]], initialState.asInstanceOf[S], Map.empty)
     case e: TransitionFiredEvent[P, T, E] ⇒
 
-      val transition = e.transition.asInstanceOf[T[Any, E, S]]
+      val transition = e.transition.asInstanceOf[T[Any, E]]
       val newState = sourceFn(transition)(instance.state)(e.output)
 
       instance.copy[P, T, S](
@@ -60,7 +60,7 @@ object EventSourcing {
         jobs = instance.jobs - e.jobId
       )
     case e: TransitionFailedEvent[P, T, Any] ⇒
-      val transition = e.transition.asInstanceOf[T[Any, E, S]]
+      val transition = e.transition.asInstanceOf[T[Any, E]]
       val job = instance.jobs.getOrElse(e.jobId, {
         Job[P, T, S, E](e.jobId, instance.state, transition, e.consume, e.input, None)
       })

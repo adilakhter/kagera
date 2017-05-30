@@ -9,11 +9,11 @@ import io.kagera.execution.ExceptionStrategy.RetryWithDelay
  */
 object PetriNetInstanceProtocol {
 
-  implicit def fromExecutionInstance[P[_], T[_, _, _], S](instance: io.kagera.execution.Instance[P, T, S])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _, _]]): InstanceState =
+  implicit def fromExecutionInstance[P[_], T[_, _], S](instance: io.kagera.execution.Instance[P, T, S])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): InstanceState =
     InstanceState(instance.sequenceNr, Marking.marshal[P](instance.marking), instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
 
-  implicit def fromExecutionJob[P[_], T[_, _, _], S, E](job: io.kagera.execution.Job[P, T, S, E])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _, _]]): JobState =
-    JobState(job.id, transitionIdentifier(job.transition.asInstanceOf[T[_, _, _]]).value, Marking.marshal(job.consume), job.input, job.failure.map(fromExecutionExceptionState(_)))
+  implicit def fromExecutionJob[P[_], T[_, _], S, E](job: io.kagera.execution.Job[P, T, S, E])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): JobState =
+    JobState(job.id, transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value, Marking.marshal(job.consume), job.input, job.failure.map(fromExecutionExceptionState(_)))
 
   implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
     ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
@@ -40,9 +40,9 @@ object PetriNetInstanceProtocol {
 
   object FireTransition {
 
-    def apply[T[_, _, _], I](t: T[I, _, _], input: I)(implicit transitionIdentifier: Identifiable[T[_, _, _]]): FireTransition = FireTransition(transitionIdentifier(t.asInstanceOf[T[_, _, _]]).value, input, None)
+    def apply[T[_, _], I](t: T[I, _], input: I)(implicit transitionIdentifier: Identifiable[T[_, _]]): FireTransition = FireTransition(transitionIdentifier(t.asInstanceOf[T[_, _]]).value, input, None)
 
-    def apply[T[_, _, _]](t: T[Unit, _, _])(implicit transitionIdentifier: Identifiable[T[_, _, _]]): FireTransition = FireTransition(transitionIdentifier(t.asInstanceOf[T[_, _, _]]).value, (), None)
+    def apply[T[_, _]](t: T[Unit, _])(implicit transitionIdentifier: Identifiable[T[_, _]]): FireTransition = FireTransition(transitionIdentifier(t.asInstanceOf[T[_, _]]).value, (), None)
   }
 
   /**

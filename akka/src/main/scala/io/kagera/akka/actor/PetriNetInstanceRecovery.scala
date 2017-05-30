@@ -6,14 +6,14 @@ import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{EventSourcing, Instance}
 import io.kagera.persistence.{ObjectSerializer, Serialization, messages}
 
-abstract class PetriNetInstanceRecovery[P[_], T[_,_,_], S](
-     val topology: PetriNet[P[_], T[_,_,_]],
+abstract class PetriNetInstanceRecovery[P[_], T[_,_], S](
+     val topology: PetriNet[P[_], T[_,_]],
      objectSerializer: ObjectSerializer,
-     eventSourceFn: T[_,_,_] => (S => Any => S)) extends PersistentActor {
+     eventSourceFn: T[_,_] => (S => Any => S)) extends PersistentActor {
 
   implicit val system = context.system
   implicit val placeIdentifier: Identifiable[P[_]]
-  implicit val transitionIdentifier: Identifiable[T[_,_,_]]
+  implicit val transitionIdentifier: Identifiable[T[_,_]]
 
   val eventSource = EventSourcing.apply[P, T, S, Any](eventSourceFn)
 

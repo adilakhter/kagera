@@ -13,19 +13,19 @@ import io.kagera.persistence.{ Encryption, Serialization }
 
 object PetriNetQuery {
 
-  def eventsForInstance[P[_], T[_, _, _], S](processId: String,
-    topology: PetriNet[P[_], T[_, _, _]],
+  def eventsForInstance[P[_], T[_, _], S](processId: String,
+    topology: PetriNet[P[_], T[_, _]],
     encryption: Encryption = NoEncryption,
     readJournal: CurrentEventsByPersistenceIdQuery,
-    eventSourcing: T[_, _, _] ⇒ EventSource[S, Any])(implicit actorSystem: ActorSystem,
+    eventSourceFn: T[_, _] ⇒ EventSource[S, Any])(implicit actorSystem: ActorSystem,
       placeIdentifier: Identifiable[P[_]],
-      transitionIdentifier: Identifiable[T[_, _, _]]): Source[(Instance[P, T, S], Event), NotUsed] = {
+      transitionIdentifier: Identifiable[T[_, _]]): Source[(Instance[P, T, S], Event), NotUsed] = {
 
     val serializer = new Serialization[P, T, S](new AkkaObjectSerializer(actorSystem, encryption))
 
     val persistentId = PetriNetInstance.processId2PersistenceId(processId)
     val src = readJournal.currentEventsByPersistenceId(persistentId, 0, Long.MaxValue)
-    val eventSource = EventSourcing.apply[P, T, S, Any](eventSourcing)
+    val eventSource = EventSourcing.apply[P, T, S, Any](eventSourceFn)
 
     src.scan[(Instance[P, T, S], Event)]((Instance.uninitialized[P, T, S](topology), null.asInstanceOf[Event])) {
       case ((instance, prev), e) ⇒

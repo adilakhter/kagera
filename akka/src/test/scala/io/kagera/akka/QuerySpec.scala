@@ -13,6 +13,7 @@ import io.kagera.akka.query.PetriNetQuery
 import io.kagera.api._
 import io.kagera.dsl.colored._
 import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
+import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._
 
@@ -37,7 +38,9 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
   "The query package" should {
 
-    "return a source of events for a petriNet instance" in {
+    "return a source of events for a petriNet instance" in new StateTransitionNet[Unit, Unit] {
+
+      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -51,14 +54,19 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
       val processId = UUID.randomUUID().toString
-      val instance = createPetriNetActor(petriNet, processId)
+      val instance = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId)
 
       instance ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       expectMsg(Initialized(Marking.marshal[Place](Marking(p1 -> 1)), ()))
       expectMsgPF(timeOut) { case TransitionFired(_, 1, _, _, _, _) ⇒ }
       expectMsgPF(timeOut) { case TransitionFired(_, 2, _, _, _, _) ⇒ }
 
-      PetriNetQuery.eventsForInstance[Unit](processId = processId, topology = petriNet, readJournal = readJournal)
+      PetriNetQuery.eventsForInstance[Place, Transition, Unit](
+        processId,
+        petriNet,
+        NoEncryption,
+        readJournal,
+        t ⇒ eventSourceFn.asInstanceOf[Unit ⇒ Any ⇒ Unit])
         .map(_._2) // Get the event from the tuple
         .runWith(TestSink.probe)
         .request(3)
@@ -77,7 +85,9 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     }
 
-    "return all persisted processIds" in {
+    "return all persisted processIds" in new StateTransitionNet[Unit, Unit] {
+
+      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -93,13 +103,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
 
       val processId1 = UUID.randomUUID().toString
-      val instance1 = createPetriNetActor(petriNet, processId1)
+      val instance1 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId1)
 
       val processId2 = UUID.randomUUID().toString
-      val instance2 = createPetriNetActor(petriNet, processId2)
+      val instance2 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId2)
 
       val processId3 = UUID.randomUUID().toString
-      val instance3 = createPetriNetActor(petriNet, processId3)
+      val instance3 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId3)
 
       instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
@@ -114,7 +124,9 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
         .expectNoMsg(1.second)
     }
 
-    "return current persisted processIds, stream stopped in the end" in {
+    "return current persisted processIds, stream stopped in the end" in new StateTransitionNet[Unit, Unit] {
+
+      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -130,13 +142,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
 
       val processId1 = UUID.randomUUID().toString
-      val instance1 = createPetriNetActor(petriNet, processId1)
+      val instance1 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId1)
 
       val processId2 = UUID.randomUUID().toString
-      val instance2 = createPetriNetActor(petriNet, processId2)
+      val instance2 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId2)
 
       val processId3 = UUID.randomUUID().toString
-      val instance3 = createPetriNetActor(petriNet, processId3)
+      val instance3 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId3)
 
       instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())

@@ -1,74 +1,17 @@
 package io.kagera.dsl.colored
 
-import io.kagera.api.MultiSet
 import io.kagera.execution.ExceptionStrategy.BlockTransition
-import io.kagera.execution.{ TransitionExceptionHandler, TransitionTask }
+import io.kagera.execution.TransitionExceptionHandler
 
 /**
  * A transition in a Colored Petri Net
  *
  * @tparam Input  The input type of the transition, the type of value that is required as input
  * @tparam Output The output type of the transition, the type of value that this transition 'emits' or 'produces'
- * @tparam State  The type of state the transition closes over.
  */
-trait Transition[Input, Output, State] {
-
-  /**
-   * The unique identifier of this transition.
-   *
-   * @return The unique identifier.
-   */
+trait Transition[Input, Output] {
   val id: Long
-
-  /**
-   * A human readable label of this transition.
-   *
-   * @return The label.
-   */
-  val label: String
-
-  /**
-   * Flag indicating whether this transition is managed or manually triggered
-   * from outside.
-   *
-   * This is only true IFF Input == Unit.
-   *
-   * TODO How to encode this? the problem is in some contexts the Input type is unknown but this property might still
-   * be needed
-   *
-   * Require a TypeTag for Input?
-   */
-  val isAutomated: Boolean
-
-  /**
-   * Indicates a strategy to use when dealing with exceptions.
-   *
-   * @return
-   */
+  def label: String
+  def isAutomated: Boolean
   def exceptionStrategy: TransitionExceptionHandler = (e, n) ⇒ BlockTransition
-
-  /**
-   * Given the in and out adjacent places with their weight returns a function:
-   *
-   * (Mi, S, I) => (Mo, O)
-   *
-   * Where:
-   *
-   * Mi is the in-adjacent marking, the tokens this transition consumes.
-   * S is the context state.
-   * I is input data
-   *
-   * Mo is the out-adjacent marking, the tokens this transition produces.
-   * O is the emitted output
-   *
-   * @param inAdjacent
-   * @param outAdjacent
-   * @return
-   */
-  def apply(inAdjacent: MultiSet[Place[_]], outAdjacent: MultiSet[Place[_]]): TransitionTask[Place, Input, Output, State]
-
-  /**
-   * The state event sourcing function.
-   */
-  def updateState: State ⇒ Output ⇒ State
 }

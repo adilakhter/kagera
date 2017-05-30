@@ -28,12 +28,12 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ Added(3))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal(initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
       source.map(_.transitionId).runWith(TestSink.probe).request(3).expectNext(1, 2, 3)
 
@@ -44,14 +44,14 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
       implicit val waitTimeout: FiniteDuration = 2 seconds
       implicit val akkaTimeout: akka.util.Timeout = waitTimeout
 
-      override val eventSourcing: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)
 
       val t1 = nullTransition[Unit](id = 1, automated = false)
-      val t2 = transition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
-      val t3 = transition(id = 3, automated = true)(_ ⇒ Thread.sleep(200))
+      val t2 = stateTransition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
+      val t3 = stateTransition(id = 3, automated = true)(_ ⇒ Thread.sleep(200))
 
       val petriNet = createPetriNet[Unit](
         t1 ~> p1,
@@ -60,12 +60,12 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         p2 ~> t3
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn)
 
       actor ! Initialize(Marking.marshal(Marking.empty[Place]), ())
       expectMsgClass(classOf[Initialized])
 
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val api = new PetriNetInstanceApi[Place, Transition, Unit](petriNet, actor)
 
       val results = api.askAndCollectAllSync(FireTransition(1, ()))
 
@@ -79,8 +79,8 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition()(_ ⇒ Added(1))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
+      val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
 
       source.runWith(TestSink.probe[TransitionResponse]).expectSubscriptionAndComplete()

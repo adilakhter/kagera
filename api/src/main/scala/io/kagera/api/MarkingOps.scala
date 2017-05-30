@@ -48,6 +48,8 @@ trait MarkingOps {
     def toMarking: Marking[P] = HMap[P, MultiSet](i.toMap[P[_], MultiSet[_]])
   }
 
+  def toMarking[P[_]](mset: MultiSet[P[_]]): Marking[P] = mset.map { case (p, n) ⇒ p -> Map(() -> n) }.toMarking
+
   implicit class MultiSetToMarking[P[_]](m: MultiSet[P[_]]) {
     def toMarking: Marking[P] = m.map { case (p, n) ⇒ p -> Map(() -> n) }.toMarking
   }

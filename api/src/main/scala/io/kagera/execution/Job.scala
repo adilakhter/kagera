@@ -6,10 +6,10 @@ import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 /**
  * A Job encapsulates all the parameters that make a firing transition in a petri net.
  */
-case class Job[P[_], T[_, _, _], S, E](
+case class Job[P[_], T[_, _], S, E](
     id: Long,
     processState: S,
-    transition: T[_, E, S],
+    transition: T[_, E],
     consume: Marking[P],
     input: Any,
     failure: Option[ExceptionState] = None) {

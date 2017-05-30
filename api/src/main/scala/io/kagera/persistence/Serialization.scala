@@ -48,8 +48,8 @@ object Serialization {
  * TODO: allow an ObjectSerializer per Place / Transition ?
  *
  */
-class Serialization[P[_], T[_, _, _], S](
-    serializer: ObjectSerializer)(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _, _]]) {
+class Serialization[P[_], T[_, _], S](
+    serializer: ObjectSerializer)(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]) {
 
   /**
    * De-serializes a persistence.messages.Event to a EvenSourcing.Event. An Instance is required to 'wire' or 'reference'

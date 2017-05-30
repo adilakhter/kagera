@@ -39,14 +39,14 @@ object PetriNetInstance {
 /**
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
-class PetriNetInstance[P[_], T[_, _, _], S](
-    topology: PetriNet[P[_], T[_, _, _]],
+class PetriNetInstance[P[_], T[_, _], S](
+    topology: PetriNet[P[_], T[_, _]],
     settings: Settings,
     jobPicker: JobPicker[P, T],
     jobExecutor: JobExecutor[S, P, T],
-    eventSourceFn: T[_, _, _] ⇒ (S ⇒ Any ⇒ S),
+    eventSourceFn: T[_, _] ⇒ (S ⇒ Any ⇒ S),
     override implicit val placeIdentifier: Identifiable[P[_]],
-    override implicit val transitionIdentifier: Identifiable[T[_, _, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, eventSourceFn) {
+    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, eventSourceFn) {
 
   import PetriNetInstance._
 
@@ -109,7 +109,7 @@ class PetriNetInstance[P[_], T[_, _, _], S](
 
     case event @ TransitionFiredEvent(jobId, transition, timeStarted, timeCompleted, consumed, produced, output) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _, _]]).value
+      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
 
       val mdc = Map(
         "kageraEvent" -> "TransitionFired",
@@ -136,7 +136,7 @@ class PetriNetInstance[P[_], T[_, _, _], S](
 
     case event @ TransitionFailedEvent(jobId, transition, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _, _]]).value
+      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
 
       val mdc = Map(
         "kageraEvent" -> "TransitionFailed",
@@ -181,7 +181,7 @@ class PetriNetInstance[P[_], T[_, _, _], S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any, S]], input).run(instance).value match {
+      jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any]], input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
@@ -217,7 +217,7 @@ class PetriNetInstance[P[_], T[_, _, _], S](
 
   def executeJob[E](job: Job[P, T, S, E], originalSender: ActorRef) = {
 
-    val transitionId = transitionIdentifier(job.transition.asInstanceOf[T[_, _, _]]).value
+    val transitionId = transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value
     val mdc = Map(
       "kageraEvent" -> "FiringTransition",
       "processId" -> processId,
