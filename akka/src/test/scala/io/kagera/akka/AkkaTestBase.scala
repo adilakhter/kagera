@@ -10,9 +10,10 @@ import fs2.Strategy
 import io.kagera.akka.AkkaTestBase.MockShardActor
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
+import io.kagera.api.{ Marking, TokenGame }
 import io.kagera.dsl.colored
-import io.kagera.dsl.colored.{ ColoredPetriNet, Place, Transition }
-import io.kagera.execution.{ JobExecutor, TransitionTaskProvider }
+import io.kagera.dsl.colored.{ ColoredPetriNet, ColoredTokenGame, Place, Transition }
+import io.kagera.execution.{ PetriNetRuntime, TransitionTaskProvider }
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
@@ -58,17 +59,15 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def coloredProps[S](topology: ColoredPetriNet,
-    taskProvider: TransitionTaskProvider[S, Place, Transition],
-    eventSourceFn: S ⇒ Any ⇒ S,
+  def coloredProps[S](
+    topology: ColoredPetriNet,
+    runtime: PetriNetRuntime[Place, Transition, S, Any],
     settings: Settings): Props =
 
     Props(new PetriNetInstance[Place, Transition, S](
       topology,
       settings,
-      colored.jobPicker,
-      new JobExecutor[S, Place, Transition](topology, taskProvider, t ⇒ t.exceptionStrategy)(settings.evaluationStrategy),
-      t ⇒ eventSourceFn,
+      runtime,
       colored.placeIdentifier,
       colored.transitionIdentifier)
     )
@@ -102,8 +101,8 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     system.actorOf(mockShardActorProps)
   }
 
-  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, taskProvider: TransitionTaskProvider[S, Place, Transition],
-    eventSourceFn: S ⇒ E ⇒ S, processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
-    createPetriNetActor(coloredProps(petriNet, taskProvider, eventSourceFn.asInstanceOf[S ⇒ Any ⇒ S], instanceSettings), processId)
+  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, Any], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+
+    createPetriNetActor(coloredProps(petriNet, runtime, instanceSettings), processId)
   }
 }

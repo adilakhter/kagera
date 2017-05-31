@@ -23,11 +23,6 @@ package object colored {
    */
   type ColoredPetriNet = PetriNet[Place[_], Transition[_, _]]
 
-  val jobPicker = new JobPicker[Place, Transition](new ColoredTokenGame()) {
-    override def isFireable[S](instance: Instance[Place, Transition, S], t: Transition[_, _]): Boolean =
-      t.isAutomated && !instance.isBlockedReason(t).isDefined
-  }
-
   implicit def placeLabel[C](p: Place[C]): Label = Label(p.label)
 
   implicit def placeIdentifier(p: Place[_]): Id = Id(p.id)

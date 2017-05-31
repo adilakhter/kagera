@@ -40,7 +40,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return a source of events for a petriNet instance" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -54,7 +54,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
       val processId = UUID.randomUUID().toString
-      val instance = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId)
+      val instance = createPetriNetActor[Unit, Unit](petriNet, runtime, processId)
 
       instance ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       expectMsg(Initialized(Marking.marshal[Place](Marking(p1 -> 1)), ()))
@@ -66,7 +66,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
         petriNet,
         NoEncryption,
         readJournal,
-        t ⇒ eventSourceFn.asInstanceOf[Unit ⇒ Any ⇒ Unit])
+        t ⇒ eventSourcefunction.asInstanceOf[Unit ⇒ Any ⇒ Unit])
         .map(_._2) // Get the event from the tuple
         .runWith(TestSink.probe)
         .request(3)
@@ -87,7 +87,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return all persisted processIds" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -103,13 +103,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
 
       val processId1 = UUID.randomUUID().toString
-      val instance1 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId1)
+      val instance1 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId1)
 
       val processId2 = UUID.randomUUID().toString
-      val instance2 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId2)
+      val instance2 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId2)
 
       val processId3 = UUID.randomUUID().toString
-      val instance3 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId3)
+      val instance3 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId3)
 
       instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
@@ -126,7 +126,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return current persisted processIds, stream stopped in the end" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -142,13 +142,13 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       val petriNet = createPetriNet(p1 ~> t1, t1 ~> p2, p2 ~> t2, t2 ~> p3)
 
       val processId1 = UUID.randomUUID().toString
-      val instance1 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId1)
+      val instance1 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId1)
 
       val processId2 = UUID.randomUUID().toString
-      val instance2 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId2)
+      val instance2 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId2)
 
       val processId3 = UUID.randomUUID().toString
-      val instance3 = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn, processId3)
+      val instance3 = createPetriNetActor[Unit, Unit](petriNet, runtime, processId3)
 
       instance1 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())
       instance2 ! Initialize(Marking.marshal(Marking(p1 -> 1)), ())

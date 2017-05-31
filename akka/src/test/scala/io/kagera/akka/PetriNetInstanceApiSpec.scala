@@ -28,7 +28,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ Added(3))
       )
 
-      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
       actor ! Initialize(Marking.marshal(initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
@@ -44,7 +44,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
       implicit val waitTimeout: FiniteDuration = 2 seconds
       implicit val akkaTimeout: akka.util.Timeout = waitTimeout
 
-      override val eventSourceFn: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)
@@ -60,7 +60,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         p2 ~> t3
       )
 
-      val actor = createPetriNetActor[Unit, Unit](petriNet, taskProvider, eventSourceFn)
+      val actor = createPetriNetActor[Unit, Unit](petriNet, runtime)
 
       actor ! Initialize(Marking.marshal(Marking.empty[Place]), ())
       expectMsgClass(classOf[Initialized])
@@ -79,7 +79,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition()(_ ⇒ Added(1))
       )
 
-      val actor = createPetriNetActor[Set[Int], Event](petriNet, taskProvider, eventSourceFn)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
       val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
 

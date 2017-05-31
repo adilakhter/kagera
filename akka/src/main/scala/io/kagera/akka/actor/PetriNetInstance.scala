@@ -42,11 +42,9 @@ object PetriNetInstance {
 class PetriNetInstance[P[_], T[_, _], S](
     topology: PetriNet[P[_], T[_, _]],
     settings: Settings,
-    jobPicker: JobPicker[P, T],
-    jobExecutor: JobExecutor[S, P, T],
-    eventSourceFn: T[_, _] ⇒ (S ⇒ Any ⇒ S),
+    runtime: PetriNetRuntime[P, T, S, Any],
     override implicit val placeIdentifier: Identifiable[P[_]],
-    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, eventSourceFn) {
+    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, runtime.eventSourceFn) {
 
   import PetriNetInstance._
 
@@ -57,6 +55,8 @@ class PetriNetInstance[P[_], T[_, _], S](
   override def persistenceId: String = processId2PersistenceId(processId)
 
   import context.dispatcher
+
+  val executor = runtime.jobExecutor.apply(topology)(settings.evaluationStrategy)
 
   override def receiveCommand = uninitialized
 
@@ -181,7 +181,7 @@ class PetriNetInstance[P[_], T[_, _], S](
 
       val transition = topology.transitions.getById(transitionId)
 
-      jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any]], input).run(instance).value match {
+      runtime.jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any]], input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
@@ -202,7 +202,7 @@ class PetriNetInstance[P[_], T[_, _], S](
   // TODO remove side effecting here
   def step(instance: Instance[P, T, S]): (Instance[P, T, S], Set[Job[P, T, S, _]]) = {
 
-    jobPicker.enabledJobs.run(instance).value match {
+    runtime.jobPicker.enabledJobs.run(instance).value match {
       case (updatedInstance, jobs) ⇒
 
         if (jobs.isEmpty && updatedInstance.activeJobs.isEmpty)
@@ -227,7 +227,7 @@ class PetriNetInstance[P[_], T[_, _], S](
     )
 
     logWithMDC(Logging.DebugLevel, s"Firing transition ${job.transition}", mdc)
-    jobExecutor.apply(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
+    executor(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
   def scheduleFailedJobsForRetry(instance: Instance[P, T, S]): Map[Long, Cancellable] = {
