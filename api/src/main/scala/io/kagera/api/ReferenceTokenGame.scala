@@ -1,6 +1,6 @@
 package io.kagera.api
 
-trait ReferenceTokenGame[P[_], T[_, _]] extends TokenGame[P[_], T[_, _], Marking[P]] {
+class ReferenceTokenGame[P[_], T[_, _]] extends TokenGame[P[_], T[_, _], Marking[P]] {
 
   override def enabledParameters(petriNet: PetriNet[P[_], T[_, _]])(m: Marking[P]): Map[T[_, _], Iterable[Marking[P]]] =
     enabledTransitions(petriNet)(m).view.map(t ⇒ t -> consumableMarkings(petriNet)(m, t)).toMap
@@ -24,7 +24,8 @@ trait ReferenceTokenGame[P[_], T[_, _]] extends TokenGame[P[_], T[_, _], Marking
     }
   }
 
-  def consumableTokens(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P], p: P[_], t: T[_, _]): MultiSet[_]
+  def consumableTokens(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P], p: P[_], t: T[_, _]): MultiSet[_] =
+    marking.getOrElse(p.asInstanceOf[P[Any]], MultiSet.empty)
 
   // TODO optimize, no need to process all transitions
   override def enabledTransitions(petriNet: PetriNet[P[_], T[_, _]])(marking: Marking[P]): Set[T[_, _]] =

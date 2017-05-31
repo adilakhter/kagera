@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import io.kagera.akka.actor.PetriNetInstanceApi
+import io.kagera.akka.actor.{ PetriNetInstance, PetriNetInstanceApi }
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.Marking
 import io.kagera.dsl.colored._
@@ -51,7 +51,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val t1 = nullTransition[Unit](id = 1, automated = false)
       val t2 = stateTransition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
-      val t3 = stateTransition(id = 3, automated = true)(_ ⇒ Thread.sleep(200))
+      val t3 = stateTransition(id = 3, automated = true)(_ ⇒ ())
 
       val petriNet = createPetriNet[Unit](
         t1 ~> p1,
@@ -69,8 +69,9 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val results = api.askAndCollectAllSync(FireTransition(1, ()))
 
-      results(1) should matchPattern { case TransitionFailed(_, t2.id, _, _, _, _) ⇒ }
-      results(2) should matchPattern { case TransitionFired(_, t3.id, _, _, _, _) ⇒ }
+      results.size shouldBe 3
+      results.exists(_.transitionId == t2.id) shouldBe true
+      results.exists(_.transitionId == t3.id) shouldBe true
     }
 
     "Return an empty source when the petri net instance is 'uninitialized'" in new TestSequenceNet {

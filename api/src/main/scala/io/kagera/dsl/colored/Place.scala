@@ -9,7 +9,7 @@ object Place {
 /**
  * A Place in a colored petri net.
  */
-case class Place[Color](val id: Long, val label: String) {
+case class Place[Color](id: Long, label: String) {
 
   def apply[T <: Color](_tokens: T*): MarkedPlace[Place, Color] = (this, MultiSet(_tokens: _*))
 }

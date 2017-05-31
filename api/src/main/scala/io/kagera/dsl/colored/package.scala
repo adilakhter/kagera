@@ -23,11 +23,7 @@ package object colored {
    */
   type ColoredPetriNet = PetriNet[Place[_], Transition[_, _]]
 
-  implicit def placeLabel[C](p: Place[C]): Label = Label(p.label)
-
   implicit def placeIdentifier(p: Place[_]): Id = Id(p.id)
-
-  implicit def transitionLabeler(t: Transition[_, _]): Label = Label(t.label)
 
   implicit def transitionIdentifier(t: Transition[_, _]): Id = Id(t.id)
 

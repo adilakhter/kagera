@@ -10,10 +10,9 @@ import fs2.Strategy
 import io.kagera.akka.AkkaTestBase.MockShardActor
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
-import io.kagera.api.{ Marking, TokenGame }
 import io.kagera.dsl.colored
-import io.kagera.dsl.colored.{ ColoredPetriNet, ColoredTokenGame, Place, Transition }
-import io.kagera.execution.{ PetriNetRuntime, TransitionTaskProvider }
+import io.kagera.dsl.colored.{ ColoredPetriNet, Place, Transition }
+import io.kagera.execution.PetriNetRuntime
 import io.kagera.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
