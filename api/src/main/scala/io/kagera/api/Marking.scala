@@ -4,14 +4,6 @@ object Marking {
 
   def empty[P[_]]: Marking[P] = HMap[P, MultiSet](Map.empty)
 
-  def marshal[P[_]](marking: Marking[P])(implicit identifiable: Identifiable[P[_]]): MarkingData = marking.map {
-    case (p, mset) ⇒ identifiable(p).value -> mset
-  }.toMap
-
-  def unmarshal[P[_]](data: MarkingData, placeById: Long ⇒ P[_]): Marking[P] = HMap[P, MultiSet](data.map {
-    case (id, mset) ⇒ placeById(id) -> mset
-  }.toMap)
-
   def apply[P[_], A](m1: MarkedPlace[P, A]): Marking[P] = {
     HMap[P, MultiSet](Map[P[_], MultiSet[_]](m1))
   }
