@@ -158,6 +158,7 @@ class PetriNetInstance[P[_], T[_, _], S](
             "transitionId" -> transitionId)
 
           logWithMDC(Logging.WarningLevel, s"Scheduling a retry of transition '$transition' in ${Duration(delay, MILLISECONDS).toString()}", mdc)
+
           val originalSender = sender()
           persistEvent(instance, event)(
             eventSource.apply(instance)
