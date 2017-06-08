@@ -20,8 +20,8 @@ object Dependencies {
   val akkaPersistenceCassandra = "com.typesafe.akka"               %% "akka-persistence-cassandra" % "0.23"
   val akkaPersistenceQuery     = "com.typesafe.akka"               %% "akka-persistence-query-experimental" % akkaVersion
 
-  val scalaGraph               = "org.scala-graph"                  %% "graph-core"             % "1.11.4"
-  val scalaGraphDot            = "org.scala-graph"                  %% "graph-dot"              % "1.11.0"
+  val scalaGraph               = "org.scala-graph"                 %% "graph-core"             % "1.11.4"
+  val scalaGraphDot            = "org.scala-graph"                 %% "graph-dot"              % "1.11.0"
 
   val fs2Core                  = "co.fs2"                          %% "fs2-core"               % "0.9.4"
   val catsCore                 = "org.typelevel"                   %% "cats-core"              % "0.9.0"
@@ -32,4 +32,9 @@ object Dependencies {
   val scalatest                = "org.scalatest"                   %% "scalatest"              % "2.2.1"
   val scalaCheck               = "org.scalacheck"                  %% "scalacheck"             % "1.13.4"
   val mockito                  = "org.mockito"                     %  "mockito-all"            % "1.10.19"
+  val shapeless                = "com.chuusai"                     %% "shapeless"              % "2.3.2"
 }
+
+
+
+
