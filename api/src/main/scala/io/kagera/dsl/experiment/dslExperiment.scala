@@ -34,14 +34,13 @@ object dslExperiment {
         fp: FnToProduct.Aux[F, C ⇒ R],
         genAux: Generic.Aux[R, ZL]) {
 
-    def toPetrinetArc: List[Arc] = ???
 
     def executeRN[Args <: HList](args: Args) = {
       val result = transition.fn.toProduct(args.asInstanceOf[C])
       zipHLs(outputPlaces, genAux.to(result))
     }
 
-    def markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
+    val markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
       val inAdjTokens = tokensAt(inputPlaces, inMarking)
       val outPlacesWithToken = executeRN(inAdjTokens)
 
@@ -53,33 +52,18 @@ object dslExperiment {
       }
     }
 
-
-    //    def toPetrinetArc(implicit  t1: ToTraversable.Aux[I, List, Place[_]], t2: ToTraversable.Aux[O, List, Place[_]]): List[Arc] = {
-    //
-    //      val markingFn: Marking[Place] => Marking[Place] = consume => {
-    //
-    //        // TODO
-    //        // 1. Convert consume (input marking: Place[T] -> MultiSet[T]) to input tuple (A, B, C) for function (A, B, C) => (B, D)
-    //        // 2. Call the function with the input tuple resulting in (B, D)
-    //        // 3. Convert output tuple (B, D) into output marking (Place[T] -> MultiSet[T]), return it
-    //
-    //        val inTokens = tokens(inTokens, consume)
-    //
-    //        val fn = transition.fn.toProduct
-    //
-    //        val foo = inputPlacesList.map(p => consume.apply(p).head._1)
-    //      }
-    //
-    //      val runtimeTransition = RuntimeTransition(markingFn)
-    //      inputPlacesList.map(p => arc(p, runtimeTransition)) ++ outputPlacesList.map(p => arc(runtimeTransition, p))
-    //    }
+    def toArc: List[Arc] = {
+      println(this)
+      val runtimeTransition = RuntimeTransition(markingTransition)
+      inputPlacesList.map(p => arc(p, runtimeTransition)) ++ outputPlacesList.map(p => arc(runtimeTransition, p))
+    }
 
     def inputPlacesList = hlistToPlaceList(inputPlaces)
 
     def outputPlacesList = hlistToPlaceList(outputPlaces)
 
 
-    def ~>>[Tup <: Product, TL <: HList,  Z <: HList, U <: HList](p: Tup)(
+    def ~>>[Tup <: Product, TL <: HList, Z <: HList, U <: HList](p: Tup)(
       implicit
       productToHList: Generic.Aux[Tup, TL],
       l: LiftAll.Aux[Unwrapped, TL, U],
@@ -103,9 +87,9 @@ object dslExperiment {
 
 
 
-  def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*) = {
+  def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*): Seq[Arc] = {
 
-    ???
+    a.toList.flatMap(i ⇒ i.toArc)
 
     ///new ScalaGraphPetriNet(Graph(a.flatten: _*))
   }

@@ -54,7 +54,6 @@ object program extends App {
   val dsl2 = TransformationArc(p1 :: HNil, tr11, p2 :: HNil)
 
   (p1, p2, p3) ~> tr33 ~>> |>(p5)
-
   |>(p1) ~> tr11 ~>> |>(p2)
 
   import TransformationArc._
@@ -74,4 +73,13 @@ object program extends App {
   assert(dsl2.markingTransition(m) == result11)
 
   println(dsl2.markingTransition(m))
+
+  val resultingArcs =
+  buildPetriNet(
+    (p1, p2, p3) ~> tr33 ~>> |>(p5),
+    |>(p1) ~> tr11 ~>> |>(p2)
+  )
+
+  println(resultingArcs)
+
 }
