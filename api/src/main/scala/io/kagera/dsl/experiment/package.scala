@@ -4,6 +4,7 @@ import io.kagera.api.{MarkedPlace, Marking, MultiSet}
 import io.kagera.dsl.colored.Place
 import io.kagera.dsl.experiment.dslExperiment.TransformationArc
 import shapeless._
+import shapeless.ops.function.FnToProduct
 
 import scalax.collection.edge.WLDiEdge
 
@@ -33,7 +34,7 @@ package object experiment {
 
   def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
 
-  def |>[F, I <: HList, O <: HList](t: Transition[F]) = TransformationArc(transition = t)
+  def |>[F, R<: Product, C<: HList, I <: HList, O <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R]) = TransformationArc(transition = t)
 
 
   def hlistToPlaceList(hlist: HList): List[Place[_]] = hlist match {

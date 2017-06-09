@@ -13,16 +13,15 @@ object program extends App {
   val p2 = Place[Int](id = "2")
   val p3 = Place[Int](id = "3")
 
-
   val p4 = Place[String](id = "string1")
   val p5 = Place[String](id = "string2")
 
-  val tr0 = Transition(() ⇒ 1)
+  val tr0 = Transition(() ⇒ Tuple1(1))
   val tr02 = Transition(() ⇒ (1, 2))
   val tr1 = Transition((x: Int) ⇒ x + 1)
   val tr12 = Transition((x: Int) ⇒ (1, 2))
   val tr2 = Transition((x: Int, y: Int) ⇒ x + 1)
-  val tr3 = Transition((x: Int, y: Int, z: Int) ⇒ x + y + z + "")
+  val tr3 = Transition((x: Int, y: Int, z: Int) ⇒ Tuple1(x + y + z + ""))
   val tr32 = Transition((x: Int, y: Int, z: Int) ⇒ (x + y + z + "", 10))
 
   //  buildPetriNet(
@@ -37,14 +36,13 @@ object program extends App {
   //  |>  (tr02) ~>> ((p1, p2))
 
   //  val netDef2 = pnet(
-  |>(tr0) ~>> p1
+  |>(tr0) ~>> |>(p1)
   |>(tr02) ~>> ((p2, p3))
-  (p1, p2, p3) ~> tr3 ~>> p5
+  (p1, p2, p3) ~> tr3 ~>> |>(p5)
   //println(((p1, p2, p3)  ~>  tr32) ~>> ((p4, p1)))
   //      (p1, p2)      ~>  tr2,
   //      |> (p1)       ~>  tr1
   //  )
-
 
   // Given a Marking
   val m = Marking(p1(1), p4("foo"))
@@ -62,10 +60,12 @@ object program extends App {
   import TransformationArc._
   val tokens11 = tokensAt(dsl2.inputPlaces, m)
 
-  val result11 = dsl2.executeRN(tokens11).runtimeList.foldLeft(m) { case (m, t) ⇒ t match {
-    case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
-    case _ ⇒ m
-  }}
+  val result11 = dsl2.executeRN(tokens11).runtimeList.foldLeft(m) {
+    case (m, t) ⇒ t match {
+      case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
+      case _      ⇒ m
+    }
+  }
 
   println(m)
   println(result11)
