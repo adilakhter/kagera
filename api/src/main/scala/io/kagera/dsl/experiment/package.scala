@@ -1,12 +1,13 @@
 package io.kagera.dsl
 
-import io.kagera.api.{MarkedPlace, Marking, MultiSet}
+import io.kagera.api.{MarkedPlace, Marking, MultiSet, ScalaGraphPetriNet}
 import io.kagera.dsl.colored.Place
 import io.kagera.dsl.experiment.dslExperiment.TransformationArc
 import shapeless._
 import shapeless.ops.function.FnToProduct
 
 import scalax.collection.edge.WLDiEdge
+import scalax.collection.immutable.Graph
 
 package object experiment {
 
@@ -51,6 +52,13 @@ package object experiment {
     case _ => HNil
   }
 
+  def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*) = {
 
+    val arcs: Seq[Arc] = a.toList.flatMap { ta ⇒
+      println(s"--converting ${ta} to Arc")
+      ta.toArc
+    }
 
+    new ScalaGraphPetriNet(Graph(arcs : _*))
+  }
 }

@@ -1,8 +1,6 @@
 package io.kagera.dsl.experiment
 
-import dslExperiment._
 import io.kagera.api.Marking
-import runtime._
 import shapeless._
 
 object program extends App {
@@ -24,62 +22,28 @@ object program extends App {
   val tr3 = Transition((x: Int, y: Int, z: Int) ⇒ Tuple1(x + y + z + ""))
   val tr32 = Transition((x: Int, y: Int, z: Int) ⇒ (x + y + z + "", 10))
 
-  //  buildPetriNet(
-  //    (|>(p1) ~> tr1).toPetrinetArc,
-  //    ((p1, p2, p3) ~> tr3 ~> p5).toPetrinetArc)
-
-  //  Working examples:
-
-  //
-  //  |>  (tr0) ~>> p1
-  //
-  //  |>  (tr02) ~>> ((p1, p2))
-
-  //  val netDef2 = pnet(
-  |>(tr0) ~>> |>(p1)
-  |>(tr02) ~>> ((p2, p3))
-  (p1, p2, p3) ~> tr3 ~>> |>(p5)
-  //println(((p1, p2, p3)  ~>  tr32) ~>> ((p4, p1)))
-  //      (p1, p2)      ~>  tr2,
-  //      |> (p1)       ~>  tr1
-  //  )
-
   // Given a Marking
   val m = Marking(p1(1), p4("foo"))
 
+  // And two Transition Functions
   val tr33 = Transition((x: Int, y: Int, z: Int) ⇒ Tuple1(x + y + z + ""))
   val tr11 = Transition((x: Int) ⇒ Tuple1(x + 1000))
 
-  val dsl = (p1, p2, p3) ~> tr33 ~>> |>(p5)
-  val dsl2 = TransformationArc(p1 :: HNil, tr11, p2 :: HNil)
+  // We can define a TransformationArcs
+  val transitionArcExample = TransformationArc(p1 :: HNil, tr11, p2 :: HNil)
 
-  (p1, p2, p3) ~> tr33 ~>> |>(p5)
-  |>(p1) ~> tr11 ~>> |>(p2)
+  // Apply the markingTransition Function.
+  // It will apply the Transition fn and update the Markings
+  assert(transitionArcExample.markingTransition(m).get(p2).isDefined)
 
-  import TransformationArc._
-  val tokens11 = tokensAt(dsl2.inputPlaces, m)
+  // Builder that allows building a Net structure and returns Seq of Arc
+  val resultingNet =
+    buildPetriNet(
+      (p1, p2, p3) ~> tr33 ~>> |>(p5),
+      |>(p1) ~> tr11 ~>> |>(p2)
+    )
 
-  val result11 = dsl2.executeRN(tokens11).runtimeList.foldLeft(m) {
-    case (m, t) ⇒ t match {
-      case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
-      case _      ⇒ m
-    }
-  }
-
-  println(m)
-  println(result11)
-  println(result11.get(p2))
-
-  assert(dsl2.markingTransition(m) == result11)
-
-  println(dsl2.markingTransition(m))
-
-  val resultingArcs =
-  buildPetriNet(
-    (p1, p2, p3) ~> tr33 ~>> |>(p5),
-    |>(p1) ~> tr11 ~>> |>(p2)
-  )
-
-  println(resultingArcs)
+  import runtime._
+  // TODO: Run the PetriNet
 
 }

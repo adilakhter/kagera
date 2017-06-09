@@ -1,20 +1,12 @@
 package io.kagera.dsl.experiment
 
-import fs2.Task
-import io.kagera.api.{Marking, PetriNet, ReferenceTokenGame, ScalaGraphPetriNet, TokenGame}
+import io.kagera.api.Marking
 import io.kagera.dsl.experiment.dslExperiment.TransformationArc
-import io.kagera.execution.{PetriNetRuntime, TransitionTask, TransitionTaskProvider}
+import io.kagera.dsl.experiment.dslExperiment.TransformationArc._
 import shapeless._
 import shapeless.ops.function._
 import shapeless.ops.hlist._
-import ops.function._
-import syntax.std.function._
-
-import scalax.collection.edge.WLDiEdge
-import scalax.collection.immutable.Graph
-import shapeless.ops.hlist.HKernelAux
-
-import TransformationArc._
+import shapeless.syntax.std.function._
 
 object dslExperiment {
 
@@ -53,7 +45,6 @@ object dslExperiment {
     }
 
     def toArc: List[Arc] = {
-      println(this)
       val runtimeTransition = RuntimeTransition(markingTransition)
       inputPlacesList.map(p => arc(p, runtimeTransition)) ++ outputPlacesList.map(p => arc(runtimeTransition, p))
     }
@@ -74,25 +65,14 @@ object dslExperiment {
   implicit class PlaceProductDSL[P <: Product, R <: Product, L <: HList, U <: HList, C <: HList](p: P) {
 
     def ~>[F, ZL <: HList](tr: Transition[F])(implicit
-                                 g: Generic.Aux[P, L],
-                                 fp: FnToProduct.Aux[F, C ⇒ R],
-                                 rg: Generic.Aux[R, ZL],
-                                 c: Comapped.Aux[L, Place, C],
-                                 l: LiftAll.Aux[Unwrapped, L, U],
-                                 trav: ToTraversable.Aux[L, List, Place[_]]) =
+                                              g: Generic.Aux[P, L],
+                                              fp: FnToProduct.Aux[F, C ⇒ R],
+                                              rg: Generic.Aux[R, ZL],
+                                              c: Comapped.Aux[L, Place, C],
+                                              l: LiftAll.Aux[Unwrapped, L, U],
+                                              trav: ToTraversable.Aux[L, List, Place[_]]) =
 
       TransformationArc(g.to(p), tr)
   }
-
-
-
-
-  def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*): Seq[Arc] = {
-
-    a.toList.flatMap(i ⇒ i.toArc)
-
-    ///new ScalaGraphPetriNet(Graph(a.flatten: _*))
-  }
-
 }
 
