@@ -27,20 +27,23 @@ object dslExperiment {
 
 
     def executeRN[Args <: HList](args: Args) = {
-      val result = transition.fn.toProduct(args.asInstanceOf[C])
-      zipHLs(outputPlaces, genAux.to(result))
+      transition.fn.toProduct(args.asInstanceOf[C])
     }
 
-    val markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
+    val markingTransition: Marking[Place] => (Marking[Place], R) = inMarking ⇒ {
       val inAdjTokens = tokensAt(inputPlaces, inMarking)
-      val outPlacesWithToken = executeRN(inAdjTokens)
+      val output = executeRN(inAdjTokens)
+      val outPlacesWithToken = zipHLs(outputPlaces, genAux.to(output))
 
-      outPlacesWithToken.runtimeList.foldLeft(inMarking) {
-        case (m, t) ⇒ t match {
-          case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
-          case _ ⇒ m
+      val updatedMarkings =
+        outPlacesWithToken.runtimeList.foldLeft(inMarking) {
+          case (m, t) ⇒ t match {
+            case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
+            case _ ⇒ m
+          }
         }
-      }
+
+      (updatedMarkings, output)
     }
 
     def toArc: List[Arc] = {

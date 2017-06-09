@@ -11,7 +11,7 @@ import scalax.collection.immutable.Graph
 
 package object experiment {
 
-  case class RuntimeTransition[I, O](fn: Marking[Place] => Marking[Place])
+  case class RuntimeTransition[I, O](fn: Marking[Place] => (Marking[Place], O))
 
   /**
     * Type alias for the node type of the scalax.collection.Graph backing the petri net.

@@ -34,7 +34,10 @@ object program extends App {
 
   // Apply the markingTransition Function.
   // It will apply the Transition fn and update the Markings
-  assert(transitionArcExample.markingTransition(m).get(p2).isDefined)
+  val (updatedMarkings, output) = transitionArcExample.markingTransition(m)
+
+  assert(updatedMarkings.get(p2).isDefined)
+  assert(output == Tuple1(1001))
 
   // Builder that allows building a Net structure and returns Seq of Arc
   val resultingNet =
