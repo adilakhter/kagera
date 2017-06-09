@@ -69,6 +69,9 @@ object program extends App {
 
   println(m)
   println(result11)
-
   println(result11.get(p2))
+
+  assert(dsl2.markingTransition(m) == result11)
+
+  println(dsl2.markingTransition(m))
 }

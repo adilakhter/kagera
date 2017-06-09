@@ -41,8 +41,6 @@ object dslExperiment {
       zipHLs(outputPlaces, genAux.to(result))
     }
 
-
-
     def markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
       val inAdjTokens = tokensAt(inputPlaces, inMarking)
       val outPlacesWithToken = executeRN(inAdjTokens)
