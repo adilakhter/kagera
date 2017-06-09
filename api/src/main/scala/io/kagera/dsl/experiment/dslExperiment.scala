@@ -1,7 +1,6 @@
 package io.kagera.dsl.experiment
 
 import io.kagera.api.Marking
-import io.kagera.dsl.experiment.dslExperiment.TransformationArc
 import io.kagera.dsl.experiment.dslExperiment.TransformationArc._
 import shapeless._
 import shapeless.ops.function._
