@@ -34,7 +34,7 @@ package object experiment {
 
   def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
 
-  def |>[F, R<: Product, C<: HList, I <: HList, O <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R]) = TransformationArc(transition = t)
+  def |>[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
 
 
   def hlistToPlaceList(hlist: HList): List[Place[_]] = hlist match {

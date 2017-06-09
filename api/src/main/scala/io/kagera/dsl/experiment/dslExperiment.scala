@@ -25,36 +25,35 @@ object dslExperiment {
       case h :: t => inMarking.apply(h.asInstanceOf[Place[_]]).head._1 :: getTokens(t, inMarking)
     }
 
-    def tokensAt[L <: HList](places: L, markings: Marking[Place]) = getTokens(places, markings)
+    def tokensAt[L <: HList](places: L, markings: Marking[Place]): HList = getTokens(places, markings)
   }
 
-  case class TransformationArc[F, I <: HList, O <: HList, R <: Product, C <: HList]
-    (inputPlaces: I = HList(), transition: Transition[F], outputPlaces: O = HList()) (implicit val fp: FnToProduct.Aux[F, C ⇒ R]) {
-
+  case class TransformationArc[F, I <: HList, O <: HList, R <: Product, C <: HList, ZL <: HList]
+    (inputPlaces: I = HList(), transition: Transition[F], outputPlaces: O = HList()) (
+      implicit val
+        fp: FnToProduct.Aux[F, C ⇒ R],
+        genAux: Generic.Aux[R, ZL]) {
 
     def toPetrinetArc: List[Arc] = ???
 
-    def executeRN[Args <: HList, TL <: HList](args: Args)( implicit genAux: Generic.Aux[R, TL]) = {
-
+    def executeRN[Args <: HList](args: Args) = {
       val result = transition.fn.toProduct(args.asInstanceOf[C])
       zipHLs(outputPlaces, genAux.to(result))
     }
 
 
 
-    //    def markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
-    //
-    //      val inAdjTokens = tokensAt(inputPlaces, inMarking)
-    //
-    //      val outPlacesWithToken = self.executeRN(inAdjTokens)
-    //
-    //      outPlacesWithToken.runtimeList.foldLeft(inMarking) {
-    //        case (m, t) ⇒ t match {
-    //          case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
-    //          case _ ⇒ m
-    //        }
-    //      }
-    //    }
+    def markingTransition: Marking[Place] => Marking[Place] = inMarking ⇒ {
+      val inAdjTokens = tokensAt(inputPlaces, inMarking)
+      val outPlacesWithToken = executeRN(inAdjTokens)
+
+      outPlacesWithToken.runtimeList.foldLeft(inMarking) {
+        case (m, t) ⇒ t match {
+          case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
+          case _ ⇒ m
+        }
+      }
+    }
 
 
     //    def toPetrinetArc(implicit  t1: ToTraversable.Aux[I, List, Place[_]], t2: ToTraversable.Aux[O, List, Place[_]]): List[Arc] = {
@@ -82,62 +81,31 @@ object dslExperiment {
     def outputPlacesList = hlistToPlaceList(outputPlaces)
 
 
-    def ~>>[Tup <: Product, TL <: HList, ZL <: HList, Z <: HList, U <: HList](p: Tup)(
+    def ~>>[Tup <: Product, TL <: HList,  Z <: HList, U <: HList](p: Tup)(
       implicit
-      retToHList: Generic.Aux[R, ZL],
       productToHList: Generic.Aux[Tup, TL],
       l: LiftAll.Aux[Unwrapped, TL, U],
       comapped: Comapped.Aux[TL, Place, ZL],
       trav2: ToTraversable.Aux[TL, List, Place[_]]) = TransformationArc(inputPlaces, transition, productToHList.to(p))
-
   }
 
-  implicit class PlaceProductDSL[P <: Product, R<: Product, L <: HList, U <: HList, C <: HList](p: P) {
+  implicit class PlaceProductDSL[P <: Product, R <: Product, L <: HList, U <: HList, C <: HList](p: P) {
 
-    def ~>[F](tr: Transition[F])(implicit
-                                    g: Generic.Aux[P, L],
-                                    fp: FnToProduct.Aux[F, C ⇒ R],
-                                    c: Comapped.Aux[L, Place, C],
-                                    l: LiftAll.Aux[Unwrapped, L, U],
-                                    trav: ToTraversable.Aux[L, List, Place[_]]) =
+    def ~>[F, ZL <: HList](tr: Transition[F])(implicit
+                                 g: Generic.Aux[P, L],
+                                 fp: FnToProduct.Aux[F, C ⇒ R],
+                                 rg: Generic.Aux[R, ZL],
+                                 c: Comapped.Aux[L, Place, C],
+                                 l: LiftAll.Aux[Unwrapped, L, U],
+                                 trav: ToTraversable.Aux[L, List, Place[_]]) =
 
       TransformationArc(g.to(p), tr)
   }
 
 
 
-//  implicit class TransformationArcDSL[F, I <: HList, O <: HList, C <: HList](ptr: TransformationArc[F, I, O])(implicit val c: Comapped.Aux[I, Place, C]) {
-//
-//
-//
-//
-//    def executeRN[R <: Product, Args <: HList, TL <: HList](args: Args)(
-//      implicit
-//      fp: FnToProduct.Aux[F, C ⇒ R],
-//      genAux: Generic.Aux[R, TL]) = {
-//
-//      val result = ptr.transition.fn.toProduct(args.asInstanceOf[C])
-//      zipHLs(ptr.outputPlaces, genAux.to(result))
-//    }
-//
-//
-//    def ~>[R, U <: HList](r: Place[R])(implicit
-//                                       l: LiftAll.Aux[Unwrapped, I, U],
-//                                       fp: FnToProduct.Aux[F, C ⇒ R],
-//                                       trav: ToTraversable.Aux[I, List, Place[_]]) = TransformationArc(ptr.inputPlaces, ptr.transition, outputPlaces = r :: HNil)
-//
-//    def ~>[R <: Product, Tup <: Product, TL <: HList, ZL <: HList, Z <: HList, U <: HList](p: Tup)(
-//      implicit
-//      fp: FnToProduct.Aux[F, C ⇒ R],
-//      retToHList: Generic.Aux[R, ZL],
-//      productToHList: Generic.Aux[Tup, TL],
-//      l: LiftAll.Aux[Unwrapped, TL, U],
-//      comapped: Comapped.Aux[TL, Place, ZL],
-//      trav1: ToTraversable.Aux[I, List, Place[_]],
-//      trav2: ToTraversable.Aux[TL, List, Place[_]]) = TransformationArc(ptr.inputPlaces, ptr.transition, productToHList.to(p))
-//  }
 
-  def buildPetriNet(a: TransformationArc[_,_,_,_,_]*) = {
+  def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*) = {
 
     ???
 
