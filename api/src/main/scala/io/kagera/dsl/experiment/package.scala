@@ -38,6 +38,11 @@ package object experiment {
   def |>[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
 
 
+
+  implicit final class Tuple1ResOps[A](private val self: A) extends AnyVal {
+    def -<> = Tuple1(self)
+  }
+
   def hlistToPlaceList(hlist: HList): List[Place[_]] = hlist match {
     case HNil ⇒ List.empty
     case x :: xs ⇒ List(x.asInstanceOf[Place[_]]) ++ hlistToPlaceList(xs)
@@ -61,4 +66,6 @@ package object experiment {
 
     new ScalaGraphPetriNet(Graph(arcs : _*))
   }
+
+
 }
