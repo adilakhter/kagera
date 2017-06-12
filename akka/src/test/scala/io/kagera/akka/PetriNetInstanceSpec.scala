@@ -370,7 +370,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
     "fire automated transitions in parallel when possible" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)

@@ -39,12 +39,12 @@ object PetriNetInstance {
 /**
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
-class PetriNetInstance[P[_], T[_, _], S](
+class PetriNetInstance[P[_], T[_, _], S, E](
     topology: PetriNet[P[_], T[_, _]],
     settings: Settings,
-    runtime: PetriNetRuntime[P, T, S, Any],
+    runtime: PetriNetRuntime[P, T, S, E],
     override implicit val placeIdentifier: Identifiable[P[_]],
-    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, runtime.eventSourceFn) {
+    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S, E](topology, settings.serializer, runtime.eventSourceFn) {
 
   import PetriNetInstance._
 

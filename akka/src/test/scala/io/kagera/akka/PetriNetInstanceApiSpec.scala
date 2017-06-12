@@ -44,7 +44,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
       implicit val waitTimeout: FiniteDuration = 2 seconds
       implicit val akkaTimeout: akka.util.Timeout = waitTimeout
 
-      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)

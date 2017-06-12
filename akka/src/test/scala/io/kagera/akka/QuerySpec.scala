@@ -40,7 +40,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return a source of events for a petriNet instance" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -66,7 +66,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
         petriNet,
         NoEncryption,
         readJournal,
-        t ⇒ eventSourcefunction.asInstanceOf[Unit ⇒ Any ⇒ Unit])
+        t ⇒ eventSourceFunction.asInstanceOf[Unit ⇒ Any ⇒ Unit])
         .map(_._2) // Get the event from the tuple
         .runWith(TestSink.probe)
         .request(3)
@@ -87,7 +87,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return all persisted processIds" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")
@@ -126,7 +126,7 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
 
     "return current persisted processIds, stream stopped in the end" in new StateTransitionNet[Unit, Unit] {
 
-      override val eventSourcefunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val readJournal =
         PersistenceQuery(system).readJournalFor("inmemory-read-journal")

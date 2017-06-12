@@ -58,12 +58,12 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def testProps[S](
+  def testProps[S, E](
     topology: ColoredPetriNet,
-    runtime: PetriNetRuntime[Place, Transition, S, Any],
+    runtime: PetriNetRuntime[Place, Transition, S, E],
     settings: Settings): Props =
 
-    Props(new PetriNetInstance[Place, Transition, S](
+    Props(new PetriNetInstance[Place, Transition, S, E](
       topology,
       settings,
       runtime,
@@ -100,7 +100,7 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     system.actorOf(mockShardActorProps)
   }
 
-  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, Any], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, E], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
 
     createPetriNetActor(testProps(petriNet, runtime, instanceSettings), processId)
   }

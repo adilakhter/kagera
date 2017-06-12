@@ -79,7 +79,7 @@ package object experiment {
   case class TransformationArc[F, I <: HList, O <: HList, R <: Product, C <: HList, ZL <: HList]
   (inputPlaces: I = HList(), transition: Transition[F], outputPlaces: O = HList()) (
     implicit val
-  fp: FnToProduct.Aux[F, C ⇒ R],
+    fp: FnToProduct.Aux[F, C ⇒ R],
     genAux: Generic.Aux[R, ZL]) {
 
 
@@ -149,8 +149,6 @@ package object experiment {
 
 
   val petriNetRuntime = new PetriNetRuntime[Place, RuntimeTransition, Unit, Unit] {
-
-    val tokenGame: TokenGame[Place[_], RuntimeTransition[_, _], Marking[Place]] = new ReferenceTokenGame[Place, RuntimeTransition]
 
     val taskProvider: TransitionTaskProvider[Unit, Place, RuntimeTransition] = new TransitionTaskProvider[Unit, Place, RuntimeTransition] {
 
