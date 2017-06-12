@@ -5,8 +5,6 @@ import shapeless._
 
 object program extends App {
 
-  import dslExperiment._
-
   val p1 = Place[Int](id = "t1")
   val p2 = Place[Int](id = "2")
   val p3 = Place[Int](id = "3")
@@ -30,14 +28,14 @@ object program extends App {
   val tr11 = Transition((x: Int) ⇒ (x + 1000)-<>)
 
   // We can define a TransformationArcs
-  val transitionArcExample = TransformationArc(p1 :: HNil, tr11, p2 :: HNil)
+  // val transitionArcExample = TransformationArc(p1 :: HNil, tr11, p2 :: HNil)
 
   // Apply the markingTransition Function.
   // It will apply the Transition fn and update the Markings
-  val (updatedMarkings, output) = transitionArcExample.markingTransition(m)
+  //val (updatedMarkings, output) = transitionArcExample.markingTransition(m)
 
-  assert(updatedMarkings.get(p2).isDefined)
-  assert(output == Tuple1(1001))
+  //assert(updatedMarkings.get(p2).isDefined)
+  //assert(output == Tuple1(1001))
 
   // Builder that allows building a Net structure and returns Seq of Arc
   val resultingNet =
@@ -45,8 +43,6 @@ object program extends App {
       (p1, p2, p3) ~> tr33 ~>> |>(p5),
       |>(p1) ~> tr11 ~>> |>(p2)
     )
-
-  import runtime._
   // TODO: Run the PetriNet
 
 }

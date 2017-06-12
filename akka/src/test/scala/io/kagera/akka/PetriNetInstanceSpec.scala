@@ -353,7 +353,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition(automated = false)(_ ⇒ Added(2))
       )
 
-      val petriNetActor = createPetriNetActor[Set[Int]](coloredProps(petriNet, runtime, customSettings), UUID.randomUUID().toString)
+      val petriNetActor = createPetriNetActor[Set[Int]](testProps(petriNet, runtime, customSettings), UUID.randomUUID().toString)
 
       implicit val timeout = Timeout(2 seconds)
       whenReady((petriNetActor ? GetChild).mapTo[ActorRef]) {

@@ -1,13 +1,19 @@
 package io.kagera.dsl
 
-import io.kagera.api.{MarkedPlace, Marking, MultiSet, ScalaGraphPetriNet}
-import io.kagera.dsl.colored.Place
-import io.kagera.dsl.experiment.dslExperiment.TransformationArc
+import fs2.Task
+import io.kagera.api.{Id, Marking, _}
+import io.kagera.execution._
 import shapeless._
 import shapeless.ops.function.FnToProduct
+import shapeless.ops.hlist.{Comapped, LiftAll, ToTraversable}
 
 import scalax.collection.edge.WLDiEdge
 import scalax.collection.immutable.Graph
+import shapeless._
+import shapeless.ops.function._
+import shapeless.ops.hlist._
+import shapeless.syntax.std.function._
+import io.kagera.dsl.experiment.TransformationArc._
 
 package object experiment {
 
@@ -33,11 +39,12 @@ package object experiment {
 
   case class Transition[F](fn: F) extends AnyVal
 
+  implicit def transitionId(t: RuntimeTransition[_,_]): Id = Id(t.hashCode().toLong)
+  implicit def placeId(p: Place[_]): Id = Id(p.hashCode().toLong)
+
   def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
 
   def |>[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
-
-
 
   implicit final class Tuple1ResOps[A](private val self: A) extends AnyVal {
     def -<> = Tuple1(self)
@@ -57,6 +64,79 @@ package object experiment {
     case _ => HNil
   }
 
+  // --------
+
+  object TransformationArc {
+
+    private def getTokens(inPlaces: HList, inMarking: Marking[Place]): HList = inPlaces match {
+      case HNil ⇒ HNil
+      case h :: t => inMarking.apply(h.asInstanceOf[Place[_]]).head._1 :: getTokens(t, inMarking)
+    }
+
+    def tokensAt[L <: HList](places: L, markings: Marking[Place]): HList = getTokens(places, markings)
+  }
+
+  case class TransformationArc[F, I <: HList, O <: HList, R <: Product, C <: HList, ZL <: HList]
+  (inputPlaces: I = HList(), transition: Transition[F], outputPlaces: O = HList()) (
+    implicit val
+  fp: FnToProduct.Aux[F, C ⇒ R],
+    genAux: Generic.Aux[R, ZL]) {
+
+
+    def executeRN[Args <: HList](args: Args) = {
+      transition.fn.toProduct(args.asInstanceOf[C])
+    }
+
+    val markingTransition: Marking[Place] => (Marking[Place], R) = inMarking ⇒ {
+      val inAdjTokens = tokensAt(inputPlaces, inMarking)
+      val output = executeRN(inAdjTokens)
+      val outPlacesWithToken = zipHLs(outputPlaces, genAux.to(output))
+
+      val updatedMarkings =
+        outPlacesWithToken.runtimeList.foldLeft(inMarking) {
+          case (m, t) ⇒ t match {
+            case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
+            case _ ⇒ m
+          }
+        }
+
+      (updatedMarkings, (1-<>).asInstanceOf[R])
+    }
+
+    def toArc: List[Arc] = {
+      val runtimeTransition = RuntimeTransition(markingTransition)
+      inputPlacesList.map(p => arc(p, runtimeTransition)) ++ outputPlacesList.map(p => arc(runtimeTransition, p))
+    }
+
+    def inputPlacesList = hlistToPlaceList(inputPlaces)
+
+    def outputPlacesList = hlistToPlaceList(outputPlaces)
+
+
+    def ~>>[Tup <: Product, TL <: HList, Z <: HList, U <: HList](p: Tup)(
+      implicit
+      productToHList: Generic.Aux[Tup, TL],
+      l: LiftAll.Aux[Unwrapped, TL, U],
+      comapped: Comapped.Aux[TL, Place, ZL],
+      trav2: ToTraversable.Aux[TL, List, Place[_]]) = TransformationArc(inputPlaces, transition, productToHList.to(p))
+  }
+
+  implicit class PlaceProductDSL[P <: Product, R <: Product, L <: HList, U <: HList, C <: HList](p: P) {
+
+    def ~>[F, ZL <: HList](tr: Transition[F])(implicit
+                                              g: Generic.Aux[P, L],
+                                              fp: FnToProduct.Aux[F, C ⇒ R],
+                                              rg: Generic.Aux[R, ZL],
+                                              c: Comapped.Aux[L, Place, C],
+                                              l: LiftAll.Aux[Unwrapped, L, U],
+                                              trav: ToTraversable.Aux[L, List, Place[_]]) =
+
+      TransformationArc(g.to(p), tr)
+  }
+
+  // --------------
+
+
   def buildPetriNet(a: TransformationArc[_,_,_,_,_,_]*) = {
 
     val arcs: Seq[Arc] = a.toList.flatMap { ta ⇒
@@ -68,4 +148,16 @@ package object experiment {
   }
 
 
+  val petriNetRuntime = new PetriNetRuntime[Place, RuntimeTransition, Unit, Unit] {
+
+    val tokenGame: TokenGame[Place[_], RuntimeTransition[_, _], Marking[Place]] = new ReferenceTokenGame[Place, RuntimeTransition]
+
+    val taskProvider: TransitionTaskProvider[Unit, Place, RuntimeTransition] = new TransitionTaskProvider[Unit, Place, RuntimeTransition] {
+
+      def apply[Input, Output](petriNet: PetriNet[Place[_], RuntimeTransition[_, _]], t: RuntimeTransition[Input, Output]): TransitionTask[Place, Input, Output, Unit] = {
+        // TODO: compute the output?
+        (marking, state, input) ⇒ Task.now(t.fn(marking))
+      }
+    }
+  }
 }

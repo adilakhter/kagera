@@ -58,7 +58,7 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def coloredProps[S](
+  def testProps[S](
     topology: ColoredPetriNet,
     runtime: PetriNetRuntime[Place, Transition, S, Any],
     settings: Settings): Props =
@@ -102,6 +102,6 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
 
   def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, Any], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
 
-    createPetriNetActor(coloredProps(petriNet, runtime, instanceSettings), processId)
+    createPetriNetActor(testProps(petriNet, runtime, instanceSettings), processId)
   }
 }

@@ -21,7 +21,7 @@ trait PetriNetRuntime[P[_], T[_, _], S, E] {
 
   val taskProvider: TransitionTaskProvider[S, P, T]
 
-  val jobPicker = new JobPicker[P, T](tokenGame)
+  lazy val jobPicker = new JobPicker[P, T](tokenGame)
 
   lazy val jobExecutor: JobExecutor[S, P, T] = new JobExecutor[S, P, T](taskProvider, exceptionHandlerFn)
 }
