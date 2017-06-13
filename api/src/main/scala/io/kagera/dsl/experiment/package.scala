@@ -83,22 +83,25 @@ package object experiment {
     genAux: Generic.Aux[R, ZL]) {
 
 
-    def executeRN[Args <: HList](args: Args) = {
+    def executeFn[Args <: HList](args: Args) = {
       transition.fn.toProduct(args.asInstanceOf[C])
     }
 
     val markingTransition: Marking[Place] => (Marking[Place], R) = inMarking ⇒ {
       val inAdjTokens = tokensAt(inputPlaces, inMarking)
-      val output = executeRN(inAdjTokens)
+      val output = executeFn(inAdjTokens)
       val outPlacesWithToken = zipHLs(outputPlaces, genAux.to(output))
 
       val updatedMarkings =
-        outPlacesWithToken.runtimeList.foldLeft(inMarking) {
+        outPlacesWithToken.runtimeList.foldLeft(Marking.empty[Place]) {
           case (m, t) ⇒ t match {
             case (p, v) ⇒ m.add(p.asInstanceOf[Place[Any]], v)
             case _ ⇒ m
           }
         }
+
+
+
 
       (updatedMarkings, (1-<>).asInstanceOf[R])
     }

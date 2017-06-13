@@ -53,12 +53,14 @@ object EventSourcing {
       val transition = e.transition.asInstanceOf[T[Any, E]]
       val newState = sourceFn(transition)(instance.state)(e.output)
 
-      instance.copy[P, T, S](
+      val updated = instance.copy[P, T, S](
         sequenceNr = instance.sequenceNr + 1,
         marking = (instance.marking |-| e.consumed) |+| e.produced,
         state = newState,
         jobs = instance.jobs - e.jobId
       )
+
+      updated
     case e: TransitionFailedEvent[P, T, Any] ⇒
       val transition = e.transition.asInstanceOf[T[Any, E]]
       val job = instance.jobs.getOrElse(e.jobId, {
