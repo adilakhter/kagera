@@ -51,7 +51,7 @@ class JobPicker[P[_], T[_, _]](tokenGame: TokenGame[P[_], T[_, _], Marking[P]]) 
       case (t, markings) ⇒ isFireable(instance, t)
     }.map {
       case (t, markings) ⇒
-        val job = Job[P, T, S, Any](instance.nextJobId(), instance.state, t.asInstanceOf[T[Any, Any]], markings.head, ())
+        val job = Job[P, T, S, Any](instance.nextJobId(), instance.state, t.asInstanceOf[T[Any, Any]], markings.head, null)
         (instance.copy[P, T, S](jobs = instance.jobs + (job.id -> job)), Some(job))
     }.getOrElse((instance, None))
   }

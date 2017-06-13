@@ -182,9 +182,7 @@ class PetriNetInstance[P[_], T[_, _], S, E](
 
   def executeJob[E](job: Job[P, T, S, E], originalSender: ActorRef) = {
 
-    val transition = job.transition.asInstanceOf[T[_, _]]
-    val transitionId = transitionIdentifier(transition).value
-    logEvent(Logging.DebugLevel, LogFiringTransition(processId, job.id, transition.toString, System.currentTimeMillis()))
+    logEvent(Logging.DebugLevel, LogFiringTransition(processId, job.id, job.transition.toString, System.currentTimeMillis()))
     executor(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
