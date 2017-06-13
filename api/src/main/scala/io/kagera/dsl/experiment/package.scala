@@ -17,7 +17,7 @@ import io.kagera.dsl.experiment.TransformationArc._
 
 package object experiment {
 
-  case class RuntimeTransition[I, O](fn: Marking[Place] => (Marking[Place], O))
+  case class RuntimeTransition[I, O](id: Long, fn: (I, Marking[Place]) => (Marking[Place], O))
 
   /**
     * Type alias for the node type of the scalax.collection.Graph backing the petri net.
@@ -37,9 +37,12 @@ package object experiment {
     def apply[T <: A](_tokens: T*): MarkedPlace[Place, A] = (this, MultiSet(_tokens: _*))
   }
 
-  case class Transition[F](fn: F) extends AnyVal
+  case class Transition[F](fn: F) extends AnyVal {
 
-  implicit def transitionId(t: RuntimeTransition[_,_]): Id = Id(t.hashCode().toLong)
+    def id = fn.hashCode()
+  }
+
+  implicit def transitionId(t: RuntimeTransition[_,_]): Id = Id(t.id)
   implicit def placeId(p: Place[_]): Id = Id(p.hashCode().toLong)
 
   def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
@@ -82,14 +85,15 @@ package object experiment {
     fp: FnToProduct.Aux[F, C ⇒ R],
     genAux: Generic.Aux[R, ZL]) {
 
+    def isColdTransiton: Boolean = inputPlaces.runtimeList.isEmpty
 
     def executeFn[Args <: HList](args: Args) = {
       transition.fn.toProduct(args.asInstanceOf[C])
     }
 
-    val markingTransition: Marking[Place] => (Marking[Place], R) = inMarking ⇒ {
+    val markingTransition: (Any, Marking[Place]) => (Marking[Place], R) = (input, inMarking) ⇒ {
       val inAdjTokens = tokensAt(inputPlaces, inMarking)
-      val output = executeFn(inAdjTokens)
+      val output = if (isColdTransiton) input.asInstanceOf[R]  else executeFn(inAdjTokens)
       val outPlacesWithToken = zipHLs(outputPlaces, genAux.to(output))
 
       val updatedMarkings =
@@ -100,14 +104,11 @@ package object experiment {
           }
         }
 
-
-
-
       (updatedMarkings, (1-<>).asInstanceOf[R])
     }
 
     def toArc: List[Arc] = {
-      val runtimeTransition = RuntimeTransition(markingTransition)
+      val runtimeTransition = RuntimeTransition(transition.id, markingTransition)
       inputPlacesList.map(p => arc(p, runtimeTransition)) ++ outputPlacesList.map(p => arc(runtimeTransition, p))
     }
 
@@ -157,7 +158,7 @@ package object experiment {
 
       def apply[Input, Output](petriNet: PetriNet[Place[_], RuntimeTransition[_, _]], t: RuntimeTransition[Input, Output]): TransitionTask[Place, Input, Output, Unit] = {
         // TODO: compute the output?
-        (marking, state, input) ⇒ Task.now(t.fn(marking))
+        (marking, state, input) ⇒ Task.now(t.fn(input, marking))
       }
     }
   }
