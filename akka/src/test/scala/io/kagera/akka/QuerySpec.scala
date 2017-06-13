@@ -61,12 +61,12 @@ class QuerySpec extends AkkaTestBase with BeforeAndAfterEach {
       expectMsgPF(timeOut) { case TransitionFired(_, 1, _, _, _, _) ⇒ }
       expectMsgPF(timeOut) { case TransitionFired(_, 2, _, _, _, _) ⇒ }
 
-      PetriNetQuery.eventsForInstance[Place, Transition, Unit](
+      PetriNetQuery.eventsForInstance[Place, Transition, Unit, Unit](
         processId,
         petriNet,
         NoEncryption,
         readJournal,
-        t ⇒ eventSourcefunction.asInstanceOf[Unit ⇒ Any ⇒ Unit])
+        t ⇒ eventSourcefunction)
         .map(_._2) // Get the event from the tuple
         .runWith(TestSink.probe)
         .request(3)

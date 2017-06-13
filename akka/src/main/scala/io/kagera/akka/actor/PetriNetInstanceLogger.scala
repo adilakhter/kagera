@@ -19,7 +19,7 @@ object PetriNetInstanceLogger {
     val msg = s"Instance was idle for $idleTTL, stopping the actor"
   }
 
-  case class LogFireTransitionRejected(processId: String, transitionId: Long, rejectReason: String) extends LogEvent {
+  case class LogFireTransitionRejected(processId: String, transitionId: String, rejectReason: String) extends LogEvent {
     def mdc = Map(
       "kageraEvent" -> "FireTransitionRejected",
       "processId" -> processId,
@@ -29,7 +29,7 @@ object PetriNetInstanceLogger {
     def msg = s"Not Firing Transition '$transitionId' because: $rejectReason"
   }
 
-  case class LogTransitionFired(processId: String, transitionId: Long, jobId: Long, timeStarted: Long, timeCompleted: Long) extends LogEvent {
+  case class LogTransitionFired(processId: String, transitionId: String, jobId: Long, timeStarted: Long, timeCompleted: Long) extends LogEvent {
     def mdc = Map(
       "kageraEvent" -> "TransitionFired",
       "processId" -> processId,
@@ -42,7 +42,7 @@ object PetriNetInstanceLogger {
 
     val msg = s"Transition '$transitionId' successfully fired"
   }
-  case class LogTransitionFailed(processId: String, transitionId: Long, jobId: Long, timeStarted: Long, timeFailed: Long, failureReason: String) extends LogEvent {
+  case class LogTransitionFailed(processId: String, transitionId: String, jobId: Long, timeStarted: Long, timeFailed: Long, failureReason: String) extends LogEvent {
     def mdc = Map(
       "kageraEvent" -> "TransitionFailed",
       "processId" -> processId,
@@ -56,7 +56,7 @@ object PetriNetInstanceLogger {
     val msg = s"Transition '$transitionId' failed with: $failureReason"
   }
 
-  case class LogScheduleRetry(processId: String, transitionId: Long, delay: Long) extends LogEvent {
+  case class LogScheduleRetry(processId: String, transitionId: String, delay: Long) extends LogEvent {
     def mdc = Map(
       "kageraEvent" -> "TransitionRetry",
       "processId" -> processId,
@@ -65,7 +65,7 @@ object PetriNetInstanceLogger {
     def msg = s"Scheduling a retry of transition '$transitionId' in ${Duration(delay, MILLISECONDS).toString()}"
   }
 
-  case class LogFiringTransition(processId: String, jobId: Long, transitionId: Long, timeStarted: Long) extends LogEvent {
+  case class LogFiringTransition(processId: String, jobId: Long, transitionId: String, timeStarted: Long) extends LogEvent {
     def mdc = Map(
       "kageraEvent" -> "FiringTransition",
       "processId" -> processId,

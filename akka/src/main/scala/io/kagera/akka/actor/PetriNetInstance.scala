@@ -38,12 +38,12 @@ object PetriNetInstance {
 /**
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
-class PetriNetInstance[P[_], T[_, _], S](
+class PetriNetInstance[P[_], T[_, _], S, E](
     topology: PetriNet[P[_], T[_, _]],
     settings: Settings,
-    runtime: PetriNetRuntime[P, T, S, Any],
+    runtime: PetriNetRuntime[P, T, S, E],
     override implicit val placeIdentifier: Identifiable[P[_]],
-    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, runtime.eventSourceFn) with PetriNetInstanceLogger {
+    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S, E](topology, settings.serializer, runtime.eventSourceFn) with PetriNetInstanceLogger {
 
   import PetriNetInstance._
 
@@ -95,11 +95,12 @@ class PetriNetInstance[P[_], T[_, _], S](
     case GetState ⇒
       sender() ! fromExecutionInstance(instance)
 
-    case event @ TransitionFiredEvent(jobId, transition, timeStarted, timeCompleted, consumed, produced, output) ⇒
+    case event @ TransitionFiredEvent(jobId, t, timeStarted, timeCompleted, consumed, produced, output) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
+      val transition = t.asInstanceOf[T[_, _]]
+      val transitionId = transitionIdentifier(transition).value
 
-      logEvent(Logging.InfoLevel, LogTransitionFired(processId, transitionId, jobId, timeStarted, timeCompleted))
+      logEvent(Logging.InfoLevel, LogTransitionFired(processId, transition.toString, jobId, timeStarted, timeCompleted))
 
       persistEvent(instance, event)(
         eventSource.apply(instance)
@@ -112,16 +113,17 @@ class PetriNetInstance[P[_], T[_, _], S](
           }
       )
 
-    case event @ TransitionFailedEvent(jobId, transition, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
+    case event @ TransitionFailedEvent(jobId, t, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
+      val transition = t.asInstanceOf[T[_, _]]
+      val transitionId = transitionIdentifier(transition).value
 
-      logEvent(Logging.WarningLevel, LogTransitionFailed(processId, transitionId, jobId, timeStarted, timeFailed, reason))
+      logEvent(Logging.WarningLevel, LogTransitionFailed(processId, transition.toString, jobId, timeStarted, timeFailed, reason))
 
       strategy match {
         case RetryWithDelay(delay) ⇒
 
-          logEvent(Logging.WarningLevel, LogScheduleRetry(processId, transitionId, delay))
+          logEvent(Logging.WarningLevel, LogScheduleRetry(processId, transition.toString, delay))
 
           val originalSender = sender()
 
@@ -146,15 +148,15 @@ class PetriNetInstance[P[_], T[_, _], S](
 
     case msg @ FireTransition(transitionId, input, correlationId) ⇒
 
-      val transition = topology.transitions.getById(transitionId)
+      val transition = topology.transitions.getById(transitionId).asInstanceOf[T[Any, Any]]
 
-      runtime.jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any]], input).run(instance).value match {
+      runtime.jobPicker.createJob[S, Any, Any](transition, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
         case (_, Left(reason)) ⇒
 
-          logEvent(Logging.WarningLevel, LogFireTransitionRejected(processId, transitionId, reason))
+          logEvent(Logging.WarningLevel, LogFireTransitionRejected(processId, transition.toString, reason))
 
           sender() ! TransitionNotEnabled(transitionId, reason)
       }
@@ -180,8 +182,9 @@ class PetriNetInstance[P[_], T[_, _], S](
 
   def executeJob[E](job: Job[P, T, S, E], originalSender: ActorRef) = {
 
-    val transitionId = transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value
-    logEvent(Logging.DebugLevel, LogFiringTransition(processId, job.id, transitionId, System.currentTimeMillis()))
+    val transition = job.transition.asInstanceOf[T[_, _]]
+    val transitionId = transitionIdentifier(transition).value
+    logEvent(Logging.DebugLevel, LogFiringTransition(processId, job.id, transition.toString, System.currentTimeMillis()))
     executor(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 

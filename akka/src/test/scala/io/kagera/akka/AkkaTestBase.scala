@@ -58,12 +58,12 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def coloredProps[S](
+  def coloredProps[S, E](
     topology: ColoredPetriNet,
-    runtime: PetriNetRuntime[Place, Transition, S, Any],
+    runtime: PetriNetRuntime[Place, Transition, S, E],
     settings: Settings): Props =
 
-    Props(new PetriNetInstance[Place, Transition, S](
+    Props(new PetriNetInstance[Place, Transition, S, E](
       topology,
       settings,
       runtime,
@@ -95,12 +95,12 @@ abstract class AkkaTestBase extends TestKit(ActorSystem("testSystem", AkkaTestBa
     serializer = new AkkaObjectSerializer(system, NoEncryption)
   )
 
-  def createPetriNetActor[S](props: Props, name: String)(implicit system: ActorSystem): ActorRef = {
+  def createPetriNetActor(props: Props, name: String)(implicit system: ActorSystem): ActorRef = {
     val mockShardActorProps = Props(new MockShardActor(props, name))
     system.actorOf(mockShardActorProps)
   }
 
-  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, Any], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
+  def createPetriNetActor[S, E](petriNet: ColoredPetriNet, runtime: PetriNetRuntime[Place, Transition, S, E], processId: String = UUID.randomUUID().toString)(implicit system: ActorSystem): ActorRef = {
 
     createPetriNetActor(coloredProps(petriNet, runtime, instanceSettings), processId)
   }

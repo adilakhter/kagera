@@ -20,12 +20,11 @@ trait StateTransitionNet[S, E] {
       }
   }
 
-  val runtime: PetriNetRuntime[Place, Transition, S, Any] = new PetriNetRuntime[Place, Transition, S, Any] {
-    override val eventSourceFn: (Transition[_, _]) ⇒ (S) ⇒ (Any) ⇒ S = t ⇒ eventSourcefunction.asInstanceOf[S ⇒ Any ⇒ S]
-    override val tokenGame: TokenGame[Place[_], Transition[_, _], Marking[Place]] = new ReferenceTokenGame[Place, Transition]
+  val runtime: PetriNetRuntime[Place, Transition, S, E] = new PetriNetRuntime[Place, Transition, S, E] {
+    override val eventSourceFn: (Transition[_, _]) ⇒ (S) ⇒ (E) ⇒ S = t ⇒ eventSourcefunction
     override val taskProvider: TransitionTaskProvider[S, Place, Transition] = eventTaskProvider
     override val exceptionHandlerFn = (t: Transition[_, _]) ⇒ t.exceptionStrategy
-    override val jobPicker = new JobPicker[Place, Transition](tokenGame) {
+    override lazy val jobPicker = new JobPicker[Place, Transition](tokenGame) {
       override def isFireable[S](instance: Instance[Place, Transition, S], t: Transition[_, _]): Boolean =
         t.isAutomated && !instance.isBlockedReason(t).isDefined
     }

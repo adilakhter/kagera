@@ -1,6 +1,6 @@
 package io.kagera.execution
 
-import io.kagera.api.{ Marking, TokenGame }
+import io.kagera.api.{ Marking, ReferenceTokenGame, TokenGame }
 import io.kagera.execution.ExceptionStrategy.BlockTransition
 
 /**
@@ -13,7 +13,7 @@ import io.kagera.execution.ExceptionStrategy.BlockTransition
  */
 trait PetriNetRuntime[P[_], T[_, _], S, E] {
 
-  val tokenGame: TokenGame[P[_], T[_, _], Marking[P]]
+  val tokenGame: TokenGame[P[_], T[_, _], Marking[P]] = new ReferenceTokenGame[P, T]
 
   val eventSourceFn: T[_, _] ⇒ (S ⇒ E ⇒ S) = t ⇒ (s ⇒ e ⇒ s)
 
@@ -21,7 +21,7 @@ trait PetriNetRuntime[P[_], T[_, _], S, E] {
 
   val taskProvider: TransitionTaskProvider[S, P, T]
 
-  val jobPicker = new JobPicker[P, T](tokenGame)
+  lazy val jobPicker = new JobPicker[P, T](tokenGame)
 
   lazy val jobExecutor: JobExecutor[S, P, T] = new JobExecutor[S, P, T](taskProvider, exceptionHandlerFn)
 }
