@@ -6,10 +6,11 @@ import akka.persistence.query.scaladsl._
 import akka.stream.scaladsl._
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.api._
-import io.kagera.execution.EventSourcing._
-import io.kagera.execution._
-import io.kagera.persistence.Encryption.NoEncryption
-import io.kagera.persistence.{ Encryption, ProtobufSerialization }
+import io.kagera.runtime.EventSourcing._
+import io.kagera.runtime._
+import io.kagera.runtime.persistence.Encryption.NoEncryption
+import io.kagera.runtime.persistence.ProtobufSerialization
+import io.kagera.runtime.persistence.{ Encryption, ProtobufSerialization }
 
 object PetriNetQuery {
 

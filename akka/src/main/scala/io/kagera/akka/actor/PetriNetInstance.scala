@@ -9,10 +9,10 @@ import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.akka.actor.PetriNetInstanceLogger._
 import io.kagera.api._
-import io.kagera.execution.EventSourcing._
-import io.kagera.execution.ExceptionStrategy.RetryWithDelay
-import io.kagera.execution._
-import io.kagera.persistence.ObjectSerializer
+import io.kagera.runtime.EventSourcing._
+import io.kagera.runtime.ExceptionStrategy.RetryWithDelay
+import io.kagera.runtime._
+import io.kagera.runtime.persistence.ObjectSerializer
 
 import scala.concurrent.duration._
 import scala.language.existentials
@@ -188,7 +188,7 @@ class PetriNetInstance[P[_], T[_, _], S, E](
 
   def scheduleFailedJobsForRetry(instance: Instance[P, T, S]): Map[Long, Cancellable] = {
     instance.jobs.values.foldLeft(Map.empty[Long, Cancellable]) {
-      case (map, j @ Job(_, _, _, _, _, Some(io.kagera.execution.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
+      case (map, j @ Job(_, _, _, _, _, Some(io.kagera.runtime.ExceptionState(failureTime, _, _, RetryWithDelay(delay))))) ⇒
         val newDelay = failureTime + delay - System.currentTimeMillis()
         if (newDelay < 0) {
           executeJob(j, sender())

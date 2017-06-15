@@ -1,7 +1,7 @@
 package io.kagera.dsl.colored
 
-import io.kagera.execution.ExceptionStrategy.BlockTransition
-import io.kagera.execution.TransitionExceptionHandler
+import io.kagera.runtime.ExceptionStrategy.BlockTransition
+import io.kagera.runtime.TransitionExceptionHandler
 
 /**
  * A transition in a Colored Petri Net

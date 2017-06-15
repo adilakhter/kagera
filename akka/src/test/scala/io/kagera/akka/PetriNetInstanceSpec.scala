@@ -8,9 +8,9 @@ import akka.util.Timeout
 import io.kagera.akka.AkkaTestBase.GetChild
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
+import io.kagera.runtime.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
 import io.kagera.dsl.colored._
-import io.kagera.execution.TransitionExceptionHandler
+import io.kagera.runtime.TransitionExceptionHandler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.time.{ Milliseconds, Span }

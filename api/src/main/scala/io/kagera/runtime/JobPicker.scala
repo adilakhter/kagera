@@ -1,4 +1,4 @@
-package io.kagera.execution
+package io.kagera.runtime
 
 import cats.data.State
 import io.kagera.api.TokenGame

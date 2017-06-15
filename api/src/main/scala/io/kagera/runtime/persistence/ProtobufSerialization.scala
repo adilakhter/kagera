@@ -1,16 +1,14 @@
-package io.kagera.persistence
+package io.kagera.runtime.persistence
 
 import com.google.protobuf.ByteString
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
-import io.kagera.dsl.colored._
-import io.kagera.execution.EventSourcing._
-import io.kagera.execution.{ EventSourcing, Instance }
-import io.kagera.persistence.messages.FailureStrategy.StrategyType
-import io.kagera.persistence.messages.{ FailureStrategy, SerializedData }
-
-import scala.runtime.BoxedUnit
-import ProtobufSerialization._
+import io.kagera.runtime.persistence.messages
+import io.kagera.runtime.persistence.messages.FailureStrategy.StrategyType
+import io.kagera.runtime.persistence.messages.{ FailureStrategy, SerializedData }
+import io.kagera.runtime.EventSourcing._
+import io.kagera.runtime.ExceptionStrategy.{ BlockTransition, Fatal, RetryWithDelay }
+import io.kagera.runtime.persistence.ProtobufSerialization._
+import io.kagera.runtime.{ EventSourcing, Instance }
 
 object ProtobufSerialization {
 
@@ -117,7 +115,7 @@ class ProtobufSerialization[P[_], T[_, _], S](
       }
     }
 
-  private def deserializeConsumedMarking(instance: Instance[P, T, S], persisted: Seq[io.kagera.persistence.messages.ConsumedToken]): Marking[P] = {
+  private def deserializeConsumedMarking(instance: Instance[P, T, S], persisted: Seq[messages.ConsumedToken]): Marking[P] = {
     persisted.foldLeft(Marking.empty[P]) {
       case (accumulated, messages.ConsumedToken(Some(placeId), Some(tokenId), Some(count))) ⇒
         val place = instance.marking.keySet.getById(placeId).asInstanceOf[P[Any]]

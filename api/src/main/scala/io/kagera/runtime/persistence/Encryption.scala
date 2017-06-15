@@ -1,4 +1,4 @@
-package io.kagera.persistence
+package io.kagera.runtime.persistence
 
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec

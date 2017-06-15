@@ -1,10 +1,10 @@
-package io.kagera.execution
+package io.kagera.runtime
 
 import java.io.{ PrintWriter, StringWriter }
 
 import fs2.{ Strategy, Task }
 import io.kagera.api._
-import io.kagera.execution.EventSourcing._
+import io.kagera.runtime.EventSourcing._
 
 /**
  * Class responsible for 'executing' a transition 'Job'

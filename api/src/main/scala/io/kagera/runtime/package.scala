@@ -3,7 +3,7 @@ package io.kagera
 import fs2.Task
 import io.kagera.api.Marking
 
-package object execution {
+package object runtime {
 
   /**
    * An exception handler function associated with a transition.
