@@ -7,17 +7,20 @@ class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
 
   val coldTransitions = pn.transitions.filter(t ⇒ pn.incomingPlaces(t).isEmpty)
 
-  def enabledTransitions(m0: MultiSet[P]): Set[T] = {
+  def enabledTransitions(m0: MultiSet[P], includeCold: Boolean = true): Set[T] = {
 
     val outAdjancent = m0.keys.map(pn.outgoingTransitions).reduceOption(_ ++ _).getOrElse(Set.empty).
       filter(t ⇒ m0.isSubSet(inMarking(t)))
 
-    coldTransitions ++ outAdjancent
+    if (includeCold)
+      coldTransitions ++ outAdjancent
+    else
+      outAdjancent
   }
 
-  def enabledPermutations(m: MultiSet[P]): Set[Set[T]] = {
-    enabledTransitions(m)
-      .map(t ⇒ enabledPermutations(m.multisetDifference(inMarking(t)))
+  def enabledPermutations(m: MultiSet[P], includeCold: Boolean = true): Set[Set[T]] = {
+    enabledTransitions(m, includeCold)
+      .map(t ⇒ enabledPermutations(m.multisetDifference(inMarking(t)), false)
         .map(_ + t) + Set(t)).reduceOption(_ ++ _).getOrElse(Set.empty)
   }
 
