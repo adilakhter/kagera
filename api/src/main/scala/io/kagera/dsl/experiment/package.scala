@@ -174,6 +174,7 @@ package object experiment {
 
   implicit final class PlaceOps[P[_], A](private val self: P[A]) extends AnyVal {
     def unary_- = Tuple1(self)
+    def ~ = Tuple1(self)
     def unary_~ = Tuple1(self)
     def -|  = Tuple1(self)
   }
@@ -184,9 +185,32 @@ package object experiment {
 
     def unary_- = self
     def unary_~ = self
+    def ~ = self
   }
+
+  implicit final class PlaceImplicits3[T1, T2,T3](private val self: Tuple3[Place[T1], Place[T2], Place[T3]]) extends AnyVal {
+    def -|  = self
+    def |- = self
+
+    def unary_- = self
+    def unary_~ = self
+    def ~ = self
+  }
+
+  implicit final class PlaceImplicits4[T1, T2,T3, T4](private val self: Tuple4[Place[T1], Place[T2], Place[T3], Place[T4]]) extends AnyVal {
+    def -|  = self
+    def |- = self
+
+    def unary_- = self
+    def unary_~ = self
+    def ~ = self
+  }
+
 
   def -> [F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
 
+  implicit class TransformationDSL[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) {
+    def unary_~ =TransformationArc(transition = t)
+  }
 
 }

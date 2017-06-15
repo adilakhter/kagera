@@ -50,13 +50,15 @@ object Example3 extends App {
   val cookTomatoSauce = Transition((x: Tomatoes) ⇒ TomatoSauce("")-<>)
   val serveDinner = Transition((x: BoiledPasta, y: TomatoSauce) ⇒ { println("processing done: "); Done()-<> })
 
+  // format: off
   val net =
     buildPetriNet(
-      |>(doGroceries) ~>> (pTomatoes, pPasta),
-      |>(pPasta) ~> boilThePasta ~>> |>(pBoiledPasta),
-      |>(pTomatoes) ~> cookTomatoSauce ~>> |>(pTomatoSauce),
-      (pBoiledPasta, pTomatoSauce) ~> serveDinner ~>> |>(pDone)
+                                      ~  doGroceries                 ~> (pTomatoes, pPasta).-|,
+      ~ pPasta                        ~> boilThePasta                ~> pBoiledPasta.-|,
+      ~ pTomatoes                     ~> cookTomatoSauce             ~> pTomatoSauce.-|,
+      ~ (pBoiledPasta, pTomatoSauce)  ~> serveDinner                 ~> pDone.-|
     )
+  // format: on
 
   val initialMarking = Marking.empty[Place]
 
