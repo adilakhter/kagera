@@ -31,13 +31,20 @@ class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
     }
   }
 
-  def isCoverable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
-
-    if (marking.isSubSet(target))
+  private def isReachableCompare(marking: MultiSet[P], predicate: MultiSet[P] => Boolean): Boolean = {
+    if (predicate(marking))
       true
     else
       enabledPermutations(marking).view
-        .map(t ⇒ isCoverable(fireAll(marking, t), target))
+        .map(enabled ⇒ isReachableCompare(fireAll(marking, enabled), predicate))
         .exists(_ == true)
+  }
+
+  def isReachable(marking: MultiSet[P], target: MultiSet[P], limitColdTransitions: Boolean = true): Boolean = {
+    isReachableCompare(marking, m => m == target)
+  }
+
+  def isCoverable(marking: MultiSet[P], target: MultiSet[P], limitColdTransitions: Boolean = true): Boolean = {
+    isReachableCompare(marking, m => m.isSubSet(target))
   }
 }
