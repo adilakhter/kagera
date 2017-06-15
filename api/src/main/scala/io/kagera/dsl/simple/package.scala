@@ -1,7 +1,7 @@
 package io.kagera.dsl
 
 import io.kagera.api.{ ReferenceTokenGame, _ }
-import io.kagera.execution._
+import io.kagera.runtime._
 
 import scalax.collection.edge.WLDiEdge
 import scalax.collection.immutable.Graph

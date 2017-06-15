@@ -2,9 +2,10 @@ package io.kagera.akka.actor
 
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 import io.kagera.api._
-import io.kagera.execution.EventSourcing._
-import io.kagera.execution.{EventSourcing, Instance}
-import io.kagera.persistence.{ObjectSerializer, ProtobufSerialization, messages}
+import io.kagera.runtime.EventSourcing._
+import io.kagera.runtime.{EventSourcing, Instance}
+import io.kagera.runtime.persistence.{ProtobufSerialization, messages}
+import io.kagera.runtime.persistence.{ObjectSerializer, ProtobufSerialization}
 
 abstract class PetriNetInstanceRecovery[P[_], T[_,_], S, E](
      val topology: PetriNet[P[_], T[_,_]],

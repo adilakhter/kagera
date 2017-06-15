@@ -1,7 +1,7 @@
 package io.kagera.dsl.colored
 
 import fs2.Task
-import io.kagera.execution._
+import io.kagera.runtime._
 
 case class StateTransition[S, E](override val id: Long,
     override val label: String,

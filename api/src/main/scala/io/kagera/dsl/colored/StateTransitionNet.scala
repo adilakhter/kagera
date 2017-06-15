@@ -2,8 +2,8 @@ package io.kagera.dsl.colored
 
 import fs2.Task
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy.BlockTransition
-import io.kagera.execution._
+import io.kagera.runtime.ExceptionStrategy.BlockTransition
+import io.kagera.runtime._
 
 import scala.util.Random
 

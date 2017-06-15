@@ -1,4 +1,4 @@
-package io.kagera.execution
+package io.kagera.runtime
 
 import io.kagera.api._
 import io.kagera.dsl.colored._
