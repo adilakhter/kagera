@@ -45,13 +45,6 @@ package object experiment {
   implicit def transitionId(t: RuntimeTransition[_,_]): Id = Id(t.id)
   implicit def placeId(p: Place[_]): Id = Id(p.hashCode().toLong)
 
-  def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
-
-  def |>[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
-
-  implicit final class Tuple1ResOps[A](private val self: A) extends AnyVal {
-    def -<> = Tuple1(self)
-  }
 
   def hlistToPlaceList(hlist: HList): List[Place[_]] = hlist match {
     case HNil ⇒ List.empty
@@ -169,4 +162,31 @@ package object experiment {
       }
     }
   }
+
+  def |>[A](p: Place[A]): Tuple1[Place[A]] = Tuple1(p)
+
+  def |>[F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
+
+  implicit final class Tuple1ResOps[A](private val self: A) extends AnyVal {
+    def -<> = Tuple1(self)
+    def -| = Tuple1(self)
+  }
+
+  implicit final class PlaceOps[P[_], A](private val self: P[A]) extends AnyVal {
+    def unary_- = Tuple1(self)
+    def unary_~ = Tuple1(self)
+    def -|  = Tuple1(self)
+  }
+
+  implicit final class PlaceImplicits2[T1, T2](private val self: Tuple2[Place[T1], Place[T2]]) extends AnyVal {
+    def -|  = self
+    def |- = self
+
+    def unary_- = self
+    def unary_~ = self
+  }
+
+  def -> [F, R<: Product, C<: HList, I <: HList, O <: HList, ZL <: HList](t: Transition[F])(implicit fp: FnToProduct.Aux[F, C ⇒ R], gen: Generic.Aux[R, ZL]) = TransformationArc(transition = t)
+
+
 }
