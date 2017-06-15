@@ -28,10 +28,6 @@ package object api extends MultiSetOps with MarkingOps {
     */
   type MarkedPlace[P[_], Color] = (P[Color], MultiSet[Color])
 
-  /**
-    * Type alias for marking data.
-    */
-  type MarkingData = Map[Long, MultiSet[_]]
 
   implicit def extractId[T](e: T)(implicit identifiable: Identifiable[T]) = identifiable(e).value
 

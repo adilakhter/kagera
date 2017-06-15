@@ -22,7 +22,7 @@ package object simple {
 
   type Transition[I, O] = Int
 
-  type MarkingLike[T] = T => SimpleMarking
+  type MarkingLike[T] = T ⇒ SimpleMarking
 
   implicit def placeIdentifier(p: Place[_]): Id = Id(p.toLong)
   implicit def transitionIdentifier(t: Transition[_, _]): Id = Id(t.toLong)
@@ -36,8 +36,8 @@ package object simple {
   implicit def toSimpleMarking3(p: (Int, Int, Int)): SimpleMarking = Map(p._1 -> 1, p._2 -> 1, p._3 -> 1)
   implicit def toSimpleMarkingSeq(p: Seq[Int]): SimpleMarking = p.map(_ -> 1).toMap
 
-  implicit class ADJ[In : MarkingLike](in: In) {
-    def ~|~>[Out : MarkingLike](out: Out): TransitionAdjacency = TransitionAdjacency(implicitly[MarkingLike[In]].apply(in), implicitly[MarkingLike[Out]].apply(out))
+  implicit class ADJ[In: MarkingLike](in: In) {
+    def ~|~>[Out: MarkingLike](out: Out): TransitionAdjacency = TransitionAdjacency(implicitly[MarkingLike[In]].apply(in), implicitly[MarkingLike[Out]].apply(out))
   }
 
   val runtime = new PetriNetRuntime[Place, Transition, Unit, Unit] {

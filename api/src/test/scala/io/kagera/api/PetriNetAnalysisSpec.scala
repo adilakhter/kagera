@@ -12,10 +12,10 @@ class PetriNetAnalysisSpec extends WordSpec {
     "correctly asses the reachability of a very simple petri net" in {
 
       val pn = createPetriNet(
-            1  ~|~> (2, 3),
-            2  ~|~>  4,
-            3  ~|~>  5,
-        (4, 5) ~|~>  6
+        1 ~|~> (2, 3),
+        2 ~|~> 4,
+        3 ~|~> 5,
+        (4, 5) ~|~> 6
       )
 
       val initialMarking = Map(1 -> 1)

@@ -45,8 +45,8 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), initialState)
-      expectMsg(Initialized(Marking.marshal[Place](initialMarking), initialState))
+      actor ! Initialize(marshal[Place](initialMarking), initialState)
+      expectMsg(Initialized(marshal[Place](initialMarking), initialState))
     }
 
     "Before being initialized respond with an Unitialized message and terminate on receiving a GetState command" in new TestSequenceNet {
@@ -72,7 +72,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
       val initialState = Set(1, 2, 3)
-      val initialMarkingData = Marking.marshal[Place](initialMarking)
+      val initialMarkingData = marshal[Place](initialMarking)
 
       actor ! Initialize(initialMarkingData, initialState)
       expectMsgClass(classOf[Initialized])
@@ -90,7 +90,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       actor ! FireTransition(1, ())
@@ -107,7 +107,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       actor ! FireTransition(1, ())
@@ -129,7 +129,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       // attempt to fire the second transition
@@ -155,7 +155,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       actor ! FireTransition(1, ())
@@ -183,7 +183,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime, actorName)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       // fire the first transition (t1) manually
@@ -196,7 +196,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       expectMsgPF() { case TransitionFired(_, 2, _, _, _, _) ⇒ }
 
       // validate the final state
-      val expectedFinalState = InstanceState(3, Marking.marshal[Place](Marking(place(3) -> 1)), Set(1, 2), Map.empty)
+      val expectedFinalState = InstanceState(3, marshal[Place](Marking(place(3) -> 1)), Set(1, 2), Map.empty)
       actor ! GetState
       expectMsg(expectedFinalState)
 
@@ -228,7 +228,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
       val actorName = UUID.randomUUID().toString
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime, actorName)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       actor ! FireTransition(1, ())
@@ -272,7 +272,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime, processId)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       // expect the next marking: p2 -> 1
@@ -322,7 +322,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime, actorName)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), Set.empty)
+      actor ! Initialize(marshal[Place](initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
       expectMsgPF() { case TransitionFailed(_, 1, _, _, _, RetryWithDelay(50)) ⇒ }
 
@@ -353,13 +353,13 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
         transition(automated = false)(_ ⇒ Added(2))
       )
 
-      val petriNetActor = createPetriNetActor[Set[Int]](coloredProps(petriNet, runtime, customSettings), UUID.randomUUID().toString)
+      val petriNetActor = createPetriNetActor(coloredProps(petriNet, runtime, customSettings), UUID.randomUUID().toString)
 
       implicit val timeout = Timeout(2 seconds)
       whenReady((petriNetActor ? GetChild).mapTo[ActorRef]) {
         child ⇒
           {
-            petriNetActor ! Initialize(Marking.marshal[Place](initialMarking), ())
+            petriNetActor ! Initialize(marshal[Place](initialMarking), ())
             expectMsgClass(classOf[Initialized])
 
             watch(child)
@@ -391,7 +391,7 @@ class PetriNetInstanceSpec extends AkkaTestBase with ScalaFutures with MockitoSu
 
       val actor = createPetriNetActor[Unit, Unit](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal[Place](initialMarking), ())
+      actor ! Initialize(marshal[Place](initialMarking), ())
       expectMsgClass(classOf[Initialized])
 
       // fire the first transition manually

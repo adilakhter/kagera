@@ -3,18 +3,17 @@ package io.kagera.akka.actor
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.event.Logging
-import akka.event.Logging.LogLevel
 import akka.pattern.pipe
-import fs2.{ Strategy, Task }
+import fs2.Strategy
 import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
+import io.kagera.akka.actor.PetriNetInstanceLogger._
 import io.kagera.api._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.ExceptionStrategy.RetryWithDelay
 import io.kagera.execution._
 import io.kagera.persistence.ObjectSerializer
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.existentials
 
@@ -39,18 +38,16 @@ object PetriNetInstance {
 /**
  * This actor is responsible for maintaining the state of a single petri net instance.
  */
-class PetriNetInstance[P[_], T[_, _], S](
+class PetriNetInstance[P[_], T[_, _], S, E](
     topology: PetriNet[P[_], T[_, _]],
     settings: Settings,
-    runtime: PetriNetRuntime[P, T, S, Any],
+    runtime: PetriNetRuntime[P, T, S, E],
     override implicit val placeIdentifier: Identifiable[P[_]],
-    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S](topology, settings.serializer, runtime.eventSourceFn) {
+    override implicit val transitionIdentifier: Identifiable[T[_, _]]) extends PetriNetInstanceRecovery[P, T, S, E](topology, settings.serializer, runtime.eventSourceFn) with PetriNetInstanceLogger {
 
   import PetriNetInstance._
 
   val processId = context.self.path.name
-
-  val log = Logging.getLogger(this)
 
   override def persistenceId: String = processId2PersistenceId(processId)
 
@@ -60,28 +57,20 @@ class PetriNetInstance[P[_], T[_, _], S](
 
   override def receiveCommand = uninitialized
 
-  def logWithMDC(level: LogLevel, msg: String, mdc: Map[String, Any]) = {
-    try {
-      log.setMDC(mdc.asJava)
-      log.log(level, msg)
-    } finally {
-      log.clearMDC()
-    }
-  }
-
   def uninitialized: Receive = {
     case msg @ Initialize(markingData, state) ⇒
 
-      val initialMarking = Marking.unmarshal[P](markingData, topology.places.getById)
+      val initialMarking = unmarshal[P](markingData, topology.places.getById)
       val uninitialized = Instance.uninitialized[P, T, S](topology)
       val event = InitializedEvent(initialMarking, state)
 
       persistEvent(uninitialized, event) {
         eventSource.apply(uninitialized)
           .andThen(step)
-          .andThen { updatedInstance ⇒
-            context become running(updatedInstance._1, Map.empty)
-            sender() ! Initialized(Marking.marshal(initialMarking), state)
+          .andThen {
+            case (updatedInstance, _) ⇒
+              context become running(updatedInstance, Map.empty)
+              sender() ! Initialized(marshal(initialMarking), state)
           }
       }
     case msg: Command ⇒
@@ -100,71 +89,50 @@ class PetriNetInstance[P[_], T[_, _], S](
       context.stop(context.self)
 
     case IdleStop(n) if n == instance.sequenceNr && instance.activeJobs.isEmpty ⇒
-      val mdc = Map("processId" -> processId)
-      logWithMDC(Logging.DebugLevel, s"Instance was idle for ${settings.idleTTL}, stopping the actor", mdc)
+      logEvent(Logging.DebugLevel, LogIdleStop(processId, settings.idleTTL.getOrElse(Duration.Zero)))
       context.parent ! Passivate(SupervisorStrategy.Stop)
 
     case GetState ⇒
       sender() ! fromExecutionInstance(instance)
 
-    case event @ TransitionFiredEvent(jobId, transition, timeStarted, timeCompleted, consumed, produced, output) ⇒
+    case event @ TransitionFiredEvent(jobId, t, timeStarted, timeCompleted, consumed, produced, output) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
+      val transition = t.asInstanceOf[T[_, _]]
+      val transitionId = transitionIdentifier(transition).value
 
-      val mdc = Map(
-        "kageraEvent" -> "TransitionFired",
-        "processId" -> processId,
-        "jobId" -> jobId,
-        "transitionId" -> transitionId,
-        "timeStarted" -> timeStarted,
-        "timeCompleted" -> timeCompleted,
-        "duration" -> (timeCompleted - timeStarted)
-      )
-
-      logWithMDC(Logging.DebugLevel, s"Transition '$transition' successfully fired", mdc)
+      logEvent(Logging.InfoLevel, LogTransitionFired(processId, transition.toString, jobId, timeStarted, timeCompleted))
 
       persistEvent(instance, event)(
         eventSource.apply(instance)
           .andThen(step)
           .andThen {
             case (updatedInstance, newJobs) ⇒
-              sender() ! TransitionFired(jobId, transitionId, Marking.marshal[P](event.consumed.asInstanceOf[Marking[P]]), Marking.marshal[P](event.produced.asInstanceOf[Marking[P]]), fromExecutionInstance(updatedInstance), newJobs.map(_.id))
+              sender() ! TransitionFired(jobId, transitionId, marshal[P](event.consumed.asInstanceOf[Marking[P]]), marshal[P](event.produced.asInstanceOf[Marking[P]]), fromExecutionInstance(updatedInstance), newJobs.map(_.id))
               context become running(updatedInstance, scheduledRetries - jobId)
               updatedInstance
           }
       )
 
-    case event @ TransitionFailedEvent(jobId, transition, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
+    case event @ TransitionFailedEvent(jobId, t, timeStarted, timeFailed, consume, input, reason, strategy) ⇒
 
-      val transitionId = transitionIdentifier(transition.asInstanceOf[T[_, _]]).value
+      val transition = t.asInstanceOf[T[_, _]]
+      val transitionId = transitionIdentifier(transition).value
 
-      val mdc = Map(
-        "kageraEvent" -> "TransitionFailed",
-        "processId" -> processId,
-        "timeStarted" -> timeStarted,
-        "timeFailed" -> timeFailed,
-        "duration" -> (timeFailed - timeStarted),
-        "transitionId" -> transitionId,
-        "transitionFailureReason" -> reason
-      )
-
-      logWithMDC(Logging.WarningLevel, s"Transition '$transition' failed with: $reason", mdc)
+      logEvent(Logging.WarningLevel, LogTransitionFailed(processId, transition.toString, jobId, timeStarted, timeFailed, reason))
 
       strategy match {
         case RetryWithDelay(delay) ⇒
-          val mdc = Map(
-            "kageraEvent" -> "TransitionRetry",
-            "processId" -> processId,
-            "transitionId" -> transitionId)
 
-          logWithMDC(Logging.WarningLevel, s"Scheduling a retry of transition '$transition' in ${Duration(delay, MILLISECONDS).toString()}", mdc)
+          logEvent(Logging.WarningLevel, LogScheduleRetry(processId, transition.toString, delay))
 
           val originalSender = sender()
+
           persistEvent(instance, event)(
             eventSource.apply(instance)
               .andThen { updatedInstance ⇒
+
                 val retry = system.scheduler.scheduleOnce(delay milliseconds) { executeJob(updatedInstance.jobs(jobId), originalSender) }
-                sender() ! TransitionFailed(jobId, transitionId, Marking.marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
+                sender() ! TransitionFailed(jobId, transitionId, marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
                 context become running(updatedInstance, scheduledRetries + (jobId -> retry))
               }
           )
@@ -173,27 +141,23 @@ class PetriNetInstance[P[_], T[_, _], S](
           persistEvent(instance, event)(
             eventSource.apply(instance)
               .andThen { updatedInstance ⇒
-                sender() ! TransitionFailed(jobId, transitionId, Marking.marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
+                sender() ! TransitionFailed(jobId, transitionId, marshal[P](consume.asInstanceOf[Marking[P]]), input, reason, strategy)
                 context become running(updatedInstance, scheduledRetries - jobId)
               })
       }
 
     case msg @ FireTransition(transitionId, input, correlationId) ⇒
 
-      val transition = topology.transitions.getById(transitionId)
+      val transition = topology.transitions.getById(transitionId).asInstanceOf[T[Any, Any]]
 
-      runtime.jobPicker.createJob[S, Any, Any](transition.asInstanceOf[T[Any, Any]], input).run(instance).value match {
+      runtime.jobPicker.createJob[S, Any, Any](transition, input).run(instance).value match {
         case (updatedInstance, Right(job)) ⇒
           executeJob(job, sender())
           context become running(updatedInstance, scheduledRetries)
         case (_, Left(reason)) ⇒
-          val mdc = Map(
-            "kageraEvent" -> "FireTransitionRejected",
-            "processId" -> processId,
-            "transitionId" -> transitionId,
-            "rejectReason" -> reason)
 
-          logWithMDC(Logging.WarningLevel, s"Not Firing Transition '$transition' because: $reason", mdc)
+          logEvent(Logging.WarningLevel, LogFireTransitionRejected(processId, transition.toString, reason))
+
           sender() ! TransitionNotEnabled(transitionId, reason)
       }
     case msg: Initialize ⇒
@@ -218,16 +182,7 @@ class PetriNetInstance[P[_], T[_, _], S](
 
   def executeJob[E](job: Job[P, T, S, E], originalSender: ActorRef) = {
 
-    val transitionId = transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value
-    val mdc = Map(
-      "kageraEvent" -> "FiringTransition",
-      "processId" -> processId,
-      "jobId" -> job.id,
-      "transitionId" -> transitionId,
-      "timeStarted" -> System.currentTimeMillis()
-    )
-
-    logWithMDC(Logging.DebugLevel, s"Firing transition ${job.transition}", mdc)
+    logEvent(Logging.DebugLevel, LogFiringTransition(processId, job.id, job.transition.toString, System.currentTimeMillis()))
     executor(job).unsafeRunAsyncFuture().pipeTo(context.self)(originalSender)
   }
 
@@ -250,8 +205,8 @@ class PetriNetInstance[P[_], T[_, _], S](
 
   override def onRecoveryCompleted(instance: Instance[P, T, S]) = {
     val scheduledRetries = scheduleFailedJobsForRetry(instance)
-
-    val updatedInstance = step(instance)._1
+    val (updatedInstance, jobs) = step(instance)
     context become running(updatedInstance, scheduledRetries)
   }
 }
+

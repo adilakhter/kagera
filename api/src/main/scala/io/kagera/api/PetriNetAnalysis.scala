@@ -35,6 +35,7 @@ object PetriNetAnalysis {
     else
       enabledTransitions(pn)(start).view.map { t ⇒
         val nextMarking = markingAfterT(pn)(start, t)
-        isReachable(pn)(nextMarking, target) }.exists(_ == true)
+        isReachable(pn)(nextMarking, target)
+      }.exists(_ == true)
   }
 }

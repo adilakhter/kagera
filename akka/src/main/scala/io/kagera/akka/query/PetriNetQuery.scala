@@ -9,23 +9,23 @@ import io.kagera.api._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution._
 import io.kagera.persistence.Encryption.NoEncryption
-import io.kagera.persistence.{ Encryption, Serialization }
+import io.kagera.persistence.{ Encryption, ProtobufSerialization }
 
 object PetriNetQuery {
 
-  def eventsForInstance[P[_], T[_, _], S](processId: String,
+  def eventsForInstance[P[_], T[_, _], S, E](processId: String,
     topology: PetriNet[P[_], T[_, _]],
     encryption: Encryption = NoEncryption,
     readJournal: CurrentEventsByPersistenceIdQuery,
-    eventSourceFn: T[_, _] ⇒ EventSource[S, Any])(implicit actorSystem: ActorSystem,
+    eventSourceFn: T[_, _] ⇒ (S ⇒ E ⇒ S))(implicit actorSystem: ActorSystem,
       placeIdentifier: Identifiable[P[_]],
       transitionIdentifier: Identifiable[T[_, _]]): Source[(Instance[P, T, S], Event), NotUsed] = {
 
-    val serializer = new Serialization[P, T, S](new AkkaObjectSerializer(actorSystem, encryption))
+    val serializer = new ProtobufSerialization[P, T, S](new AkkaObjectSerializer(actorSystem, encryption))
 
     val persistentId = PetriNetInstance.processId2PersistenceId(processId)
     val src = readJournal.currentEventsByPersistenceId(persistentId, 0, Long.MaxValue)
-    val eventSource = EventSourcing.apply[P, T, S, Any](eventSourceFn)
+    val eventSource = EventSourcing.apply[P, T, S, E](eventSourceFn)
 
     src.scan[(Instance[P, T, S], Event)]((Instance.uninitialized[P, T, S](topology), null.asInstanceOf[Event])) {
       case ((instance, prev), e) ⇒

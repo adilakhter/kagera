@@ -4,20 +4,20 @@ import akka.persistence.{PersistentActor, RecoveryCompleted}
 import io.kagera.api._
 import io.kagera.execution.EventSourcing._
 import io.kagera.execution.{EventSourcing, Instance}
-import io.kagera.persistence.{ObjectSerializer, Serialization, messages}
+import io.kagera.persistence.{ObjectSerializer, ProtobufSerialization, messages}
 
-abstract class PetriNetInstanceRecovery[P[_], T[_,_], S](
+abstract class PetriNetInstanceRecovery[P[_], T[_,_], S, E](
      val topology: PetriNet[P[_], T[_,_]],
      objectSerializer: ObjectSerializer,
-     eventSourceFn: T[_,_] => (S => Any => S)) extends PersistentActor {
+     eventSourceFn: T[_,_] => (S => E => S)) extends PersistentActor {
 
   implicit val system = context.system
   implicit val placeIdentifier: Identifiable[P[_]]
   implicit val transitionIdentifier: Identifiable[T[_,_]]
 
-  val eventSource = EventSourcing.apply[P, T, S, Any](eventSourceFn)
+  val eventSource = EventSourcing.apply[P, T, S, E](eventSourceFn)
 
-  val serializer = new Serialization[P, T, S](objectSerializer)
+  val serializer = new ProtobufSerialization[P, T, S](objectSerializer)
 
   def onRecoveryCompleted(state: Instance[P, T, S])
 
