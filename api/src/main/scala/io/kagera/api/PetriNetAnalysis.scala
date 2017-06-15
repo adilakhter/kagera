@@ -31,7 +31,7 @@ class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
     }
   }
 
-  private def isReachablePredicate(marking: MultiSet[P], predicate: MultiSet[P] => Boolean): Boolean = {
+  private def isReachablePredicate(marking: MultiSet[P], predicate: MultiSet[P] ⇒ Boolean): Boolean = {
 
     if (predicate(marking))
       true
@@ -42,10 +42,10 @@ class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
   }
 
   def isReachable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
-    isReachablePredicate(marking, m => m == target)
+    isReachablePredicate(marking, m ⇒ m == target)
   }
 
   def isCoverable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
-    isReachablePredicate(marking, m => m.isSubSet(target))
+    isReachablePredicate(marking, m ⇒ m.isSubSet(target))
   }
 }
