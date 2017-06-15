@@ -1,41 +1,43 @@
 package io.kagera.api
 
-object PetriNetAnalysis {
+class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
 
-  implicit class PetriNetAnalysisFunctions[P, T](pn: PetriNet[P, T]) {
+  val inMarking = pn.transitions.map(t ⇒ t -> pn.inMarking(t)).toMap
+  val outMarking = pn.transitions.map(t ⇒ t -> pn.outMarking(t)).toMap
 
-    def isReachable(start: MultiSet[P], target: MultiSet[P]): Boolean = PetriNetAnalysis.isReachable(pn)(start, target)
+  val coldTransitions = pn.transitions.filter(t ⇒ pn.incomingPlaces(t).isEmpty)
 
-    def isCoverable(start: MultiSet[P], target: MultiSet[P]): Boolean = ???
+  def enabledTransitions(m0: MultiSet[P]): Set[T] = {
 
-    def enabledTransitions(m: MultiSet[P]): Iterable[T] = PetriNetAnalysis.enabledTransitions(pn)(m)
+    val outAdjancent = m0.keys.map(pn.outgoingTransitions).reduceOption(_ ++ _).getOrElse(Set.empty).
+      filter(t ⇒ m0.isSubSet(inMarking(t)))
+
+    coldTransitions ++ outAdjancent
   }
 
-  private def markingAfterT[P, T](pn: PetriNet[P, T])(m0: MultiSet[P], t: T): MultiSet[P] =
-    m0.multisetDifference(pn.inMarking(t))
-      .multisetSum(pn.outMarking(t))
-
-  /**
-   * Given a petri net and a marking, finds the enabled transitions in that marking.
-   */
-  def enabledTransitions[P, T](pn: PetriNet[P, T])(m0: MultiSet[P]): Set[T] = {
-
-    // transitions without input may always fire
-    val c = pn.transitions.filter(t ⇒ pn.incomingPlaces(t).isEmpty)
-
-    val outT = m0.keys.map(pn.outgoingTransitions).reduceOption(_ ++ _).getOrElse(Set.empty).
-      filter(t ⇒ m0.isSubSet(pn.inMarking(t)))
-
-    c ++ outT
+  def enabledPermutations(m: MultiSet[P]): Set[Set[T]] = {
+    enabledTransitions(m)
+      .map(t ⇒ enabledPermutations(m.multisetDifference(inMarking(t)))
+        .map(_ + t) + Set(t)).reduceOption(_ ++ _).getOrElse(Set.empty)
   }
 
-  def isReachable[P, T](pn: PetriNet[P, T])(start: MultiSet[P], target: MultiSet[P]): Boolean = {
-    if (start == target)
+  def fire(m0: MultiSet[P], t: T): MultiSet[P] =
+    m0.multisetDifference(inMarking(t))
+      .multisetSum(outMarking(t))
+
+  def fireAll(m0: MultiSet[P], transitions: Iterable[T]): MultiSet[P] = {
+    transitions.foldLeft(m0) {
+      case (m, t) ⇒ fire(m, t)
+    }
+  }
+
+  def isCoverable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
+
+    if (marking.isSubSet(target))
       true
     else
-      enabledTransitions(pn)(start).view.map { t ⇒
-        val nextMarking = markingAfterT(pn)(start, t)
-        isReachable(pn)(nextMarking, target)
-      }.exists(_ == true)
+      enabledPermutations(marking).view
+        .map(t ⇒ isCoverable(fireAll(marking, t), target))
+        .exists(_ == true)
   }
 }

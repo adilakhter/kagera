@@ -1,6 +1,5 @@
 package io.kagera.api
 
-import io.kagera.api.PetriNetAnalysis._
 import io.kagera.dsl.simple._
 import org.scalatest.Matchers._
 import org.scalatest.WordSpec
@@ -21,7 +20,9 @@ class PetriNetAnalysisSpec extends WordSpec {
       val initialMarking = Map(1 -> 1)
       val targetMarking = Map(6 -> 1)
 
-      pn.isReachable(initialMarking, targetMarking) shouldBe true
+      val analysis = new PetriNetAnalysis(pn)
+
+      analysis.isCoverable(initialMarking, targetMarking) shouldBe true
     }
   }
 }
