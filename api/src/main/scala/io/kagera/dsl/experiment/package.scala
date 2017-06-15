@@ -2,7 +2,7 @@ package io.kagera.dsl
 
 import fs2.Task
 import io.kagera.api.{Id, Marking, _}
-import io.kagera.execution._
+import io.kagera.runtime._
 import shapeless._
 import shapeless.ops.function.FnToProduct
 import shapeless.ops.hlist.{Comapped, LiftAll, ToTraversable}

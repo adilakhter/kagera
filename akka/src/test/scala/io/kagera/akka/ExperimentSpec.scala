@@ -7,7 +7,7 @@ import io.kagera.akka.actor.PetriNetInstance
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api._
 import io.kagera.dsl.experiment._
-import io.kagera.execution.PetriNetRuntime
+import io.kagera.runtime.PetriNetRuntime
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Matchers._
