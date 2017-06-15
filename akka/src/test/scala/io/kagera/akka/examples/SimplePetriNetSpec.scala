@@ -11,7 +11,7 @@ import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 
 class SimplePetriNetSpec extends AkkaTestBase with ScalaFutures with MockitoSugar {
 
@@ -74,7 +74,7 @@ class SimplePetriNetSpec extends AkkaTestBase with ScalaFutures with MockitoSuga
       val t3Fired = expectMsgClass(classOf[TransitionFired])
 
       //      val endMarking2 = Marking.unmarshal(t3Fired.result.marking, sequence.places.getById)
-      val endMarking3 = Marking.unmarshal(t3Fired.result.marking, sequence.places.getById)
+      val endMarking3 = unmarshal(t3Fired.result.marking, sequence.places.getById)
 
       //      endMarking2 shouldBe Marking(p3(202), p4("hello world"))
       endMarking3 shouldBe Marking(p5("202--hello world"))

@@ -11,7 +11,7 @@ import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 
 class ExperimentSpec2 extends AkkaTestBase with ScalaFutures with MockitoSugar {
 
@@ -72,7 +72,7 @@ class ExperimentSpec2 extends AkkaTestBase with ScalaFutures with MockitoSugar {
       val t3Fired = expectMsgClass(classOf[TransitionFired])
 
       //      val endMarking2 = Marking.unmarshal(t3Fired.result.marking, sequence.places.getById)
-      val endMarking3 = Marking.unmarshal(t3Fired.result.marking, sequence.places.getById)
+      val endMarking3 = unmarshal(t3Fired.result.marking, sequence.places.getById)
 
       //      endMarking2 shouldBe Marking(p3(202), p4("hello world"))
       endMarking3 shouldBe Marking(lock(lockValue), p13(9900), p23("abcdefg".capitalize))

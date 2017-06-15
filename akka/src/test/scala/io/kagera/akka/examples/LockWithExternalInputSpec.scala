@@ -12,7 +12,7 @@ import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 
 class LockWithExternalInputSpec extends AkkaTestBase with ScalaFutures with MockitoSugar {
 
@@ -64,13 +64,13 @@ class LockWithExternalInputSpec extends AkkaTestBase with ScalaFutures with Mock
       val t0Fired = expectMsgClass(classOf[TransitionFired])
 
       //      val endMarking2 = Marking.unmarshal(t3Fired.result.marking, sequence.places.getById)
-      val endMarking1 = Marking.unmarshal(t0Fired.result.marking, sequence.places.getById)
+      val endMarking1 = unmarshal(t0Fired.result.marking, sequence.places.getById)
 
       val expectedEndmarking = Marking(p13(999999))
       //      endMarking2 shouldBe Marking(p3(202), p4("hello world"))
       endMarking1 shouldBe expectedEndmarking
 
-      val futureMarking = (instance ? GetState).mapTo[InstanceState].map(state ⇒ Marking.unmarshal(state.marking, sequence.places.getById))
+      val futureMarking = (instance ? GetState).mapTo[InstanceState].map(state ⇒ unmarshal(state.marking, sequence.places.getById))
 
       Await.result(futureMarking, timeout.duration) shouldBe expectedEndmarking
     }
