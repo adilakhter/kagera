@@ -1,7 +1,7 @@
-package io.kagera.execution
+package io.kagera.runtime
 
 import io.kagera.api.Marking
-import io.kagera.execution.ExceptionStrategy.RetryWithDelay
+import io.kagera.runtime.ExceptionStrategy.RetryWithDelay
 
 /**
  * A Job encapsulates all the parameters that make a firing transition in a petri net.

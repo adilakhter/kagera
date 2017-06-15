@@ -1,7 +1,7 @@
-package io.kagera.execution
+package io.kagera.runtime
 
 import io.kagera.api.{ Marking, ReferenceTokenGame, TokenGame }
-import io.kagera.execution.ExceptionStrategy.BlockTransition
+import io.kagera.runtime.ExceptionStrategy.BlockTransition
 
 /**
  * Encapsulates all components required to 'run' a petri net instance

@@ -1,8 +1,8 @@
 package io.kagera.akka.actor
 
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy
-import io.kagera.execution.ExceptionStrategy.RetryWithDelay
+import io.kagera.runtime.ExceptionStrategy
+import io.kagera.runtime.ExceptionStrategy.RetryWithDelay
 
 /**
  * Describes the messages to and from a PetriNetInstance actor.
@@ -14,13 +14,13 @@ object PetriNetInstanceProtocol {
    */
   type MarkingData = Map[Long, MultiSet[_]]
 
-  implicit def fromExecutionInstance[P[_], T[_, _], S](instance: io.kagera.execution.Instance[P, T, S])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): InstanceState =
+  implicit def fromExecutionInstance[P[_], T[_, _], S](instance: io.kagera.runtime.Instance[P, T, S])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): InstanceState =
     InstanceState(instance.sequenceNr, marshal[P](instance.marking), instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
 
-  implicit def fromExecutionJob[P[_], T[_, _], S, E](job: io.kagera.execution.Job[P, T, S, E])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): JobState =
+  implicit def fromExecutionJob[P[_], T[_, _], S, E](job: io.kagera.runtime.Job[P, T, S, E])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): JobState =
     JobState(job.id, transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value, marshal(job.consume), job.input, job.failure.map(fromExecutionExceptionState(_)))
 
-  implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
+  implicit def fromExecutionExceptionState(exceptionState: io.kagera.runtime.ExceptionState): ExceptionState =
     ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
 
   def marshal[P[_]](marking: Marking[P])(implicit identifiable: Identifiable[P[_]]): MarkingData = marking.map {

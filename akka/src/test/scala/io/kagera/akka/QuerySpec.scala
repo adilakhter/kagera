@@ -12,8 +12,8 @@ import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.akka.query.PetriNetQuery
 import io.kagera.api._
 import io.kagera.dsl.colored._
-import io.kagera.execution.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
-import io.kagera.persistence.Encryption.NoEncryption
+import io.kagera.runtime.EventSourcing.{ InitializedEvent, TransitionFiredEvent }
+import io.kagera.runtime.persistence.Encryption.NoEncryption
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Matchers._
 

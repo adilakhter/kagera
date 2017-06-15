@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import io.kagera.akka.actor.{ PetriNetInstance, PetriNetInstanceApi }
+import io.kagera.akka.actor.PetriNetInstanceApi
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
 import io.kagera.api.Marking
 import io.kagera.dsl.colored._

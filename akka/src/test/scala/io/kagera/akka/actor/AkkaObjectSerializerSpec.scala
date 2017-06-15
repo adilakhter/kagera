@@ -3,7 +3,7 @@ package io.kagera.akka.actor
 import javax.crypto.BadPaddingException
 
 import akka.actor.ActorSystem
-import io.kagera.persistence.Encryption.{ AESEncryption, NoEncryption }
+import io.kagera.runtime.persistence.Encryption.{ AESEncryption, NoEncryption }
 import org.scalatest.{ FunSuite, Matchers }
 
 class AkkaObjectSerializerSpec extends FunSuite with Matchers {

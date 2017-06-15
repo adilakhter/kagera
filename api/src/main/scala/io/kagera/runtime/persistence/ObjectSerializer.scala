@@ -1,4 +1,4 @@
-package io.kagera.persistence
+package io.kagera.runtime.persistence
 
 /**
  * Trait responsible for (de)serializing token values and transition output objects.

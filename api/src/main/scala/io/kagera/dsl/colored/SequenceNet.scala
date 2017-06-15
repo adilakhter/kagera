@@ -2,8 +2,8 @@ package io.kagera.dsl.colored
 
 import fs2.Task
 import io.kagera.api._
-import io.kagera.execution.ExceptionStrategy.BlockTransition
-import io.kagera.execution.TransitionExceptionHandler
+import io.kagera.runtime.ExceptionStrategy.BlockTransition
+import io.kagera.runtime.TransitionExceptionHandler
 
 case class TransitionBehaviour[S, E](automated: Boolean, exceptionHandler: TransitionExceptionHandler, fn: S ⇒ E) {
   def asTransition(id: Long) = StateTransition[S, E](id, s"t$id", automated, exceptionHandler, state ⇒ Task.delay { (fn(state)) })

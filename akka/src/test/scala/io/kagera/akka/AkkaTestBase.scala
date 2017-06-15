@@ -12,8 +12,8 @@ import io.kagera.akka.actor.PetriNetInstance.Settings
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
 import io.kagera.dsl.colored
 import io.kagera.dsl.colored.{ ColoredPetriNet, Place, Transition }
-import io.kagera.execution.PetriNetRuntime
-import io.kagera.persistence.Encryption.NoEncryption
+import io.kagera.runtime.PetriNetRuntime
+import io.kagera.runtime.persistence.Encryption.NoEncryption
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
 object AkkaTestBase {
