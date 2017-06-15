@@ -21,7 +21,7 @@ trait StateTransitionNet[S, E] {
   }
 
   val runtime: PetriNetRuntime[Place, Transition, S, E] = new PetriNetRuntime[Place, Transition, S, E] {
-    override val eventSourceFn: (Transition[_, _]) ⇒ S ⇒ E ⇒ S = t ⇒ eventSourceFunction
+    override val eventSourceFn: (Transition[_, _]) ⇒ (S) ⇒ (E) ⇒ S = t ⇒ eventSourceFunction
     override val taskProvider: TransitionTaskProvider[S, Place, Transition] = eventTaskProvider
     override val exceptionHandlerFn = (t: Transition[_, _]) ⇒ t.exceptionStrategy
     override lazy val jobPicker = new JobPicker[Place, Transition](tokenGame) {

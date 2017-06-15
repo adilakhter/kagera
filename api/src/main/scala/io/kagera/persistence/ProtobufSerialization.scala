@@ -10,9 +10,9 @@ import io.kagera.persistence.messages.FailureStrategy.StrategyType
 import io.kagera.persistence.messages.{ FailureStrategy, SerializedData }
 
 import scala.runtime.BoxedUnit
-import Serialization._
+import ProtobufSerialization._
 
-object Serialization {
+object ProtobufSerialization {
 
   /**
    * TODO:
@@ -48,7 +48,7 @@ object Serialization {
  * TODO: allow an ObjectSerializer per Place / Transition ?
  *
  */
-class Serialization[P[_], T[_, _], S](
+class ProtobufSerialization[P[_], T[_, _], S](
     serializer: ObjectSerializer)(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]) {
 
   /**
@@ -87,7 +87,7 @@ class Serialization[P[_], T[_, _], S](
     produced.foldLeft(Marking.empty[P]) {
       case (accumulated, messages.ProducedToken(Some(placeId), Some(tokenId), Some(count), data)) ⇒
         val place = instance.process.places.getById(placeId).asInstanceOf[P[Any]]
-        val value = data.map(deserializeObject).getOrElse(BoxedUnit.UNIT)
+        val value = data.map(deserializeObject).getOrElse(())
         accumulated.add(place, value, count)
       case _ ⇒ throw new IllegalStateException("Missing data in persisted ProducedToken")
     }
@@ -129,7 +129,8 @@ class Serialization[P[_], T[_, _], S](
 
   private def deserializeInitialized(e: messages.Initialized)(instance: Instance[P, T, S]): InitializedEvent[P] = {
     val initialMarking = deserializeProducedMarking(instance, e.initialMarking)
-    val initialState = e.initialState.map(deserializeObject).getOrElse(BoxedUnit.UNIT)
+    // TODO not really safe to return null here, throw exception ?
+    val initialState = e.initialState.map(deserializeObject).getOrElse(())
     InitializedEvent(initialMarking, initialState)
   }
 
@@ -202,7 +203,7 @@ class Serialization[P[_], T[_, _], S](
     val consumed: Marking[P] = deserializeConsumedMarking(instance, e.consumed)
     val produced: Marking[P] = deserializeProducedMarking(instance, e.produced)
 
-    val data = e.data.map(deserializeObject).getOrElse(())
+    val output = e.data.map(deserializeObject).getOrElse(null)
 
     val transitionId = e.transitionId.getOrElse(missingFieldException("transition_id"))
     val transition = instance.process.transitions.getById(transitionId)
@@ -210,6 +211,6 @@ class Serialization[P[_], T[_, _], S](
     val timeStarted = e.timeStarted.getOrElse(missingFieldException("time_started"))
     val timeCompleted = e.timeCompleted.getOrElse(missingFieldException("time_completed"))
 
-    TransitionFiredEvent[P, T, Any](jobId, transition, timeStarted, timeCompleted, consumed, produced, data)
+    TransitionFiredEvent[P, T, Any](jobId, transition, timeStarted, timeCompleted, consumed, produced, output)
   }
 }
