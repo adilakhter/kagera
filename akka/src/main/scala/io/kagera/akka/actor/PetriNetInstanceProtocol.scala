@@ -9,14 +9,27 @@ import io.kagera.execution.ExceptionStrategy.RetryWithDelay
  */
 object PetriNetInstanceProtocol {
 
+  /**
+   * Type alias for marking data.
+   */
+  type MarkingData = Map[Long, MultiSet[_]]
+
   implicit def fromExecutionInstance[P[_], T[_, _], S](instance: io.kagera.execution.Instance[P, T, S])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): InstanceState =
-    InstanceState(instance.sequenceNr, Marking.marshal[P](instance.marking), instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
+    InstanceState(instance.sequenceNr, marshal[P](instance.marking), instance.state, instance.jobs.mapValues(fromExecutionJob(_)).map(identity))
 
   implicit def fromExecutionJob[P[_], T[_, _], S, E](job: io.kagera.execution.Job[P, T, S, E])(implicit placeIdentifier: Identifiable[P[_]], transitionIdentifier: Identifiable[T[_, _]]): JobState =
-    JobState(job.id, transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value, Marking.marshal(job.consume), job.input, job.failure.map(fromExecutionExceptionState(_)))
+    JobState(job.id, transitionIdentifier(job.transition.asInstanceOf[T[_, _]]).value, marshal(job.consume), job.input, job.failure.map(fromExecutionExceptionState(_)))
 
   implicit def fromExecutionExceptionState(exceptionState: io.kagera.execution.ExceptionState): ExceptionState =
     ExceptionState(exceptionState.failureCount, exceptionState.failureReason, exceptionState.failureStrategy)
+
+  def marshal[P[_]](marking: Marking[P])(implicit identifiable: Identifiable[P[_]]): MarkingData = marking.map {
+    case (p, mset) ⇒ identifiable(p).value -> mset
+  }.toMap
+
+  def unmarshal[P[_]](data: MarkingData, placeById: Long ⇒ P[_]): Marking[P] = HMap[P, MultiSet](data.map {
+    case (id, mset) ⇒ placeById(id) -> mset
+  }.toMap)
 
   /**
    * A common trait for all commands to a petri net instance.
@@ -30,7 +43,7 @@ object PetriNetInstanceProtocol {
 
   object Initialize {
 
-    def apply[P[_]](marking: Marking[P])(implicit placeIdentifier: Identifiable[P[_]]): Initialize = Initialize(Marking.marshal[P](marking), ())
+    def apply[P[_]](marking: Marking[P])(implicit placeIdentifier: Identifiable[P[_]]): Initialize = Initialize(marshal[P](marking), ())
   }
 
   /**

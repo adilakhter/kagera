@@ -30,7 +30,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal(initialMarking), Set.empty)
+      actor ! Initialize(marshal(initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
       val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
@@ -62,7 +62,7 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
 
       val actor = createPetriNetActor[Unit, Unit](petriNet, runtime)
 
-      actor ! Initialize(Marking.marshal(Marking.empty[Place]), ())
+      actor ! Initialize(marshal(Marking.empty[Place]), ())
       expectMsgClass(classOf[Initialized])
 
       val api = new PetriNetInstanceApi[Place, Transition, Unit](petriNet, actor)
