@@ -117,6 +117,13 @@ package object experiment {
     def outputPlacesList = hlistToPlaceList(outputPlaces)
 
 
+    def ~>[Tup <: Product, TL <: HList, Z <: HList, U <: HList](p: Tup)(
+      implicit
+      productToHList: Generic.Aux[Tup, TL],
+      l: LiftAll.Aux[Unwrapped, TL, U],
+      comapped: Comapped.Aux[TL, Place, ZL],
+      trav2: ToTraversable.Aux[TL, List, Place[_]]) = TransformationArc(inputPlaces, transition, productToHList.to(p))
+
     def ~>>[Tup <: Product, TL <: HList, Z <: HList, U <: HList](p: Tup)(
       implicit
       productToHList: Generic.Aux[Tup, TL],

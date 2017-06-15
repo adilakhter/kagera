@@ -55,16 +55,18 @@ object Example1 extends App {
     () -<>
   })
 
+  // format: off
   // Builder that allows building a Net structure and returns Seq of Arc
   val sequence =
     buildPetriNet(
-      |>(t0) ~>> |>(p1),
-      |>(p1) ~> t1 ~>> |>(p2),
-      |>(p2) ~> t2 ~>> (p3, p4),
-      (p3, p4) ~> t3 ~>> |>(p5),
+              |>(t0) ~> |>(p1),
+      |>(p1) ~> t1 ~> |>(p2),
+      |>(p2) ~> t2 ~> (p3, p4),
+      (p3, p4) ~> t3 ~> |>(p5),
       |>(p5) ~> t4
 
     )
+  // format: on
 
   val instance = system.actorOf(petriNetProps(sequence))
   val initialMarking = Marking.empty[Place]
