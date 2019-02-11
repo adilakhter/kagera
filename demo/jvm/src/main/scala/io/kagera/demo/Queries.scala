@@ -6,7 +6,7 @@ import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.stream.scaladsl.Source
 import io.kagera.akka.persistence.TransitionFired
-import io.kagera.api.colored._
+import io.kagera.dsl.colored._
 import io.kagera.api.multiset._
 
 trait Queries {

@@ -1,19 +1,35 @@
 package io.kagera
 
-import io.kagera.api.multiset.MultiSet
-
 import scala.PartialFunction._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.edge.WLDiEdge
 
-package object api {
+package object api extends MultiSetOps with MarkingOps {
 
   case class Id(value: Long) extends AnyVal
   case class Label(value: String) extends AnyVal
 
   type Identifiable[T] = T ⇒ Id
   type Labeled[T] = T ⇒ Label
+
+
+  type MultiSet[T] = Map[T, Int]
+
+  /**
+    * Type alias for a marking.
+    */
+  type Marking[P[_]] = HMap[P, MultiSet]
+
+  /**
+    * Type alias for a single marked place, meaning a place containing tokens.
+    *
+    * @tparam Color the color of the place.
+    */
+  type MarkedPlace[P[_], Color] = (P[Color], MultiSet[Color])
+
+
+  implicit def extractId[T](e: T)(implicit identifiable: Identifiable[T]) = identifiable(e).value
 
   implicit class LabeledFn[T : Labeled](seq: Iterable[T]) {
     def findByLabel(label: String): Option[T] = seq.find(e ⇒ implicitly[Labeled[T]].apply(e).value == label)

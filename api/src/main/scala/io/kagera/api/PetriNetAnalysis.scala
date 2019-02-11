@@ -1,42 +1,54 @@
 package io.kagera.api
 
-import io.kagera.api.multiset._
+class PetriNetAnalysis[P, T](pn: PetriNet[P, T]) {
 
-object PetriNetAnalysis {
+  val inMarking = pn.transitions.map(t ⇒ t -> pn.inMarking(t)).toMap
+  val outMarking = pn.transitions.map(t ⇒ t -> pn.outMarking(t)).toMap
 
-  def reachabilityGraph[P, T](pn: PetriNet[P, T])(m0: MultiSet[P]) = {
+  val coldTransitions = pn.transitions.filter(t ⇒ pn.incomingPlaces(t).isEmpty)
 
-    // find the enabled transitions from m0
-    val reachableMarkings = enabled(pn)(m0).map { t ⇒
-      // compute the marking after t has fired
-      val mt = m0
-        .multisetDifference(pn.inMarking(t))
-        .multisetSum(pn.outMarking(t))
+  def enabledTransitions(m0: MultiSet[P], includeCold: Boolean = true): Set[T] = {
 
-      t -> mt
+    val outAdjancent = m0.keys.map(pn.outgoingTransitions).reduceOption(_ ++ _).getOrElse(Set.empty).
+      filter(t ⇒ m0.isSubSet(inMarking(t)))
+
+    if (includeCold)
+      coldTransitions ++ outAdjancent
+    else
+      outAdjancent
+  }
+
+  def enabledPermutations(m: MultiSet[P], includeCold: Boolean = true): Set[Set[T]] = {
+    enabledTransitions(m, includeCold)
+      .map(t ⇒ enabledPermutations(m.multisetDifference(inMarking(t)), false)
+        .map(_ + t) + Set(t)).reduceOption(_ ++ _).getOrElse(Set.empty)
+  }
+
+  def fire(m0: MultiSet[P], t: T): MultiSet[P] =
+    m0.multisetDifference(inMarking(t))
+      .multisetSum(outMarking(t))
+
+  def fireAll(m0: MultiSet[P], transitions: Iterable[T]): MultiSet[P] = {
+    transitions.foldLeft(m0) {
+      case (m, t) ⇒ fire(m, t)
     }
   }
 
-  /**
-   * Given a petri net and a marking, finds the enabled transitions in that marking.
-   */
-  def enabled[P, T](pn: PetriNet[P, T])(m0: MultiSet[P]): Set[T] = {
+  private def isReachablePredicate(marking: MultiSet[P], predicate: MultiSet[P] ⇒ Boolean): Boolean = {
 
-    // transitions without input may always fire
-    val c = pn.transitions.filter(t ⇒ pn.incomingPlaces(t).isEmpty)
-
-    val outT = m0.keys.map(pn.outgoingTransitions).reduceOption(_ ++ _).getOrElse(Set.empty).
-      filter(t ⇒ m0.isSubSet(pn.inMarking(t)))
-
-    c ++ outT
+    if (predicate(marking))
+      true
+    else
+      enabledPermutations(marking).view
+        .map(enabled ⇒ isReachablePredicate(fireAll(marking, enabled), predicate))
+        .exists(_ == true)
   }
 
-  // should check if each place is 1 bounded
-  def is1Safe[P, T](pn: PetriNet[P, T])(m0: MultiSet[P]): Boolean = ???
+  def isReachable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
+    isReachablePredicate(marking, m ⇒ m == target)
+  }
 
-  def reachable[P, T](pn: PetriNet[P, T])(m0: MultiSet[P], target: MultiSet[P]): Boolean = ???
-
-  def boundedness[P, T](pn: PetriNet[P, T])(m0: MultiSet[P], p: P) = ???
-
-  def liveliness[P, T](pn: PetriNet[P, T])(m: MultiSet[P], t: T) = ???
+  def isCoverable(marking: MultiSet[P], target: MultiSet[P]): Boolean = {
+    isReachablePredicate(marking, m ⇒ m.isSubSet(target))
+  }
 }

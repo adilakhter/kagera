@@ -1,6 +1,5 @@
 package io.kagera.api
 
-import multiset._
 import scalax.collection.edge.WLDiEdge
 
 /**
@@ -78,6 +77,13 @@ trait PetriNet[P, T] {
    * @return
    */
   def outMarking(t: T): MultiSet[P]
+
+  /**
+   * Returns all places that are leaves (have no outgoing transitions)
+   *
+   * @return
+   */
+  def leavePlaces: Set[P] = places.filter(p ⇒ outgoingTransitions(p).isEmpty)
 
   /**
    * The set of nodes (places + transitions) in the petri net.

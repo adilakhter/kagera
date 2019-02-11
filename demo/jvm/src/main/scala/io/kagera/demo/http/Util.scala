@@ -1,6 +1,6 @@
 package io.kagera.demo.http
 
-import io.kagera.api.colored.{ Place, Transition, _ }
+import io.kagera.dsl.colored.{ Place, Transition, _ }
 import io.kagera.demo.model
 
 object Util {

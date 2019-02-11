@@ -2,17 +2,16 @@ package io.kagera.akka
 
 import akka.NotUsed
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.util.Timeout
 import io.kagera.akka.actor.PetriNetInstanceApi
 import io.kagera.akka.actor.PetriNetInstanceProtocol._
-import io.kagera.api.colored.{ Marking, Place, Transition }
-import io.kagera.api.colored.dsl._
+import io.kagera.api.Marking
+import io.kagera.dsl.colored._
 import org.scalatest.Matchers._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
 
 class PetriNetInstanceApiSpec extends AkkaTestBase {
 
@@ -29,12 +28,12 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition(automated = true)(_ ⇒ Added(3))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
 
-      actor ! Initialize(initialMarking, Set.empty)
+      actor ! Initialize(marshal(initialMarking), Set.empty)
       expectMsgClass(classOf[Initialized])
 
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
       source.map(_.transitionId).runWith(TestSink.probe).request(3).expectNext(1, 2, 3)
 
@@ -45,33 +44,34 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
       implicit val waitTimeout: FiniteDuration = 2 seconds
       implicit val akkaTimeout: akka.util.Timeout = waitTimeout
 
-      override val eventSourcing: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
+      override val eventSourceFunction: Unit ⇒ Unit ⇒ Unit = s ⇒ e ⇒ s
 
       val p1 = Place[Unit](id = 1)
       val p2 = Place[Unit](id = 2)
 
       val t1 = nullTransition[Unit](id = 1, automated = false)
-      val t2 = transition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
-      val t3 = transition(id = 3, automated = true)(_ ⇒ Thread.sleep(200))
+      val t2 = stateTransition(id = 2, automated = true)(_ ⇒ throw new RuntimeException("t2 failed!"))
+      val t3 = stateTransition(id = 3, automated = true)(_ ⇒ ())
 
-      val petriNet = createPetriNet(
+      val petriNet = createPetriNet[Unit](
         t1 ~> p1,
         t1 ~> p2,
         p1 ~> t2,
         p2 ~> t3
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
+      val actor = createPetriNetActor[Unit, Unit](petriNet, runtime)
 
-      actor ! Initialize(Marking.empty, ())
+      actor ! Initialize(marshal(Marking.empty[Place]), ())
       expectMsgClass(classOf[Initialized])
 
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val api = new PetriNetInstanceApi[Place, Transition, Unit](petriNet, actor)
 
       val results = api.askAndCollectAllSync(FireTransition(1, ()))
 
-      results(1) should matchPattern { case TransitionFailed(_, t2.id, _, _, _, _) ⇒ }
-      results(2) should matchPattern { case TransitionFired(_, t3.id, _, _, _, _) ⇒ }
+      results.size shouldBe 3
+      results.exists(_.transitionId == t2.id) shouldBe true
+      results.exists(_.transitionId == t3.id) shouldBe true
     }
 
     "Return an empty source when the petri net instance is 'uninitialized'" in new TestSequenceNet {
@@ -80,8 +80,8 @@ class PetriNetInstanceApiSpec extends AkkaTestBase {
         transition()(_ ⇒ Added(1))
       )
 
-      val actor = createPetriNetActor[Set[Int]](petriNet)
-      val api = new PetriNetInstanceApi(petriNet, actor)
+      val actor = createPetriNetActor[Set[Int], Event](petriNet, runtime)
+      val api = new PetriNetInstanceApi[Place, Transition, Set[Int]](petriNet, actor)
       val source: Source[TransitionResponse, NotUsed] = api.askAndCollectAll(FireTransition(1, ()))
 
       source.runWith(TestSink.probe[TransitionResponse]).expectSubscriptionAndComplete()

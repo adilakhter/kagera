@@ -5,29 +5,34 @@ import akka.actor.ActorSystem
 import akka.persistence.query.scaladsl._
 import akka.stream.scaladsl._
 import io.kagera.akka.actor.{ AkkaObjectSerializer, PetriNetInstance }
-import io.kagera.api.colored.ExecutablePetriNet
-import io.kagera.execution.EventSourcing._
-import io.kagera.execution._
-import io.kagera.persistence.Encryption.NoEncryption
-import io.kagera.persistence.{ Encryption, Serialization }
+import io.kagera.api._
+import io.kagera.runtime.EventSourcing._
+import io.kagera.runtime._
+import io.kagera.runtime.persistence.Encryption.NoEncryption
+import io.kagera.runtime.persistence.ProtobufSerialization
+import io.kagera.runtime.persistence.{ Encryption, ProtobufSerialization }
 
 object PetriNetQuery {
 
-  def eventsForInstance[S](processId: String,
-    topology: ExecutablePetriNet[S],
+  def eventsForInstance[P[_], T[_, _], S, E](processId: String,
+    topology: PetriNet[P[_], T[_, _]],
     encryption: Encryption = NoEncryption,
-    readJournal: CurrentEventsByPersistenceIdQuery)(implicit actorSystem: ActorSystem): Source[(Instance[S], Event), NotUsed] = {
+    readJournal: CurrentEventsByPersistenceIdQuery,
+    eventSourceFn: T[_, _] ⇒ (S ⇒ E ⇒ S))(implicit actorSystem: ActorSystem,
+      placeIdentifier: Identifiable[P[_]],
+      transitionIdentifier: Identifiable[T[_, _]]): Source[(Instance[P, T, S], Event), NotUsed] = {
 
-    val serializer = new Serialization(new AkkaObjectSerializer(actorSystem, encryption))
+    val serializer = new ProtobufSerialization[P, T, S](new AkkaObjectSerializer(actorSystem, encryption))
 
     val persistentId = PetriNetInstance.processId2PersistenceId(processId)
     val src = readJournal.currentEventsByPersistenceId(persistentId, 0, Long.MaxValue)
+    val eventSource = EventSourcing.apply[P, T, S, E](eventSourceFn)
 
-    src.scan[(Instance[S], Event)]((Instance.uninitialized(topology), null.asInstanceOf[Event])) {
+    src.scan[(Instance[P, T, S], Event)]((Instance.uninitialized[P, T, S](topology), null.asInstanceOf[Event])) {
       case ((instance, prev), e) ⇒
         val serializedEvent = e.event.asInstanceOf[AnyRef]
         val deserializedEvent = serializer.deserializeEvent(serializedEvent)(instance)
-        val updatedInstance = EventSourcing.apply(instance)(deserializedEvent)
+        val updatedInstance = eventSource.apply(instance)(deserializedEvent)
         (updatedInstance, deserializedEvent)
     }.drop(1) // Just to drop the first event 'uninitialized', not interesting for the consumers.
   }

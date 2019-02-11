@@ -13,6 +13,7 @@ object Build extends Build {
     "-encoding", "utf8",
     "-target:jvm-1.8",
     "-feature",
+    "-language:existentials",
     "-language:implicitConversions",
     "-language:postfixOps",
     "-language:higherKinds",
@@ -43,6 +44,7 @@ object Build extends Build {
         scalaGraph,
         catsCore,
         fs2Core,
+        shapeless,
         scalaCheck % "test",
         scalatest % "test",
         mockito % "test"))
@@ -54,6 +56,7 @@ object Build extends Build {
       name := "kagera-visualization",
       libraryDependencies ++= Seq(
         scalaGraph,
+        scalatest % "test",
         scalaGraphDot exclude("org.scala-graph", "graph-core")))
 
   lazy val akka = Project("akka", file("akka"))
